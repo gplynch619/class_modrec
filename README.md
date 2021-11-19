@@ -1,3 +1,5 @@
+This is an ongoing modification of CLASS to investigate solutions to the H0 tension prior to recombination. The original README is below.
+
 CLASS: Cosmic Linear Anisotropy Solving System  {#mainpage}
 ==============================================
 
