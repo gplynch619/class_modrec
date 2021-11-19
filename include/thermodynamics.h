@@ -68,6 +68,9 @@ struct thermodynamics
 
   enum recombination_algorithm recombination; /**< recombination code */
 
+  char * xe_file; /*** file name for ionization fraction if read in by file*/
+  int use_external_xe;
+
   enum recfast_photoion_modes recfast_photoion_mode; /**< photo-ionization coefficient mode of the recfast algorithm */
 
   enum reionization_parametrization reio_parametrization; /**< reionization scheme */
@@ -360,6 +363,11 @@ struct thermo_diffeq_workspace {
 
   double * ap_z_limits;       /**< vector storing ending limits of each approximation */
   double * ap_z_limits_delta; /**< vector storing smoothing deltas of each approximation */
+
+  double * z_table_from_file;
+  double * xe_table_from_file;
+  double * d2xe_dz2_table; // second derivative of xe w.r.t. z
+  int xe_tablesize;
 
   int require_H;  /** in given approximation scheme, do we need to integrate hydrogen ionization fraction? */
   int require_He; /** in given approximation scheme, do we need to integrate helium ionization fraction? */

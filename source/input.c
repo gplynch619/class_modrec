@@ -423,7 +423,7 @@ int input_read_from_file(struct file_content * pfc,
 
   /** If no shooting is necessary, initialize read parameters without it */
   if(has_shooting == _FALSE_){
-    class_call(input_read_parameters(pfc,ppr,pba,pth,ppt,ptr,ppm,phr,pfo,ple,psd,pop,
+	class_call(input_read_parameters(pfc,ppr,pba,pth,ppt,ptr,ppm,phr,pfo,ple,psd,pop,
                                      errmsg),
                errmsg,
                errmsg);
@@ -432,6 +432,7 @@ int input_read_from_file(struct file_content * pfc,
   /** Write info on the read/unread parameters. This is the correct place to do it,
       since we want it to happen after all the shooting business,
       and after the final reading of all parameters */
+ 
   class_call(input_write_info(pfc,pop,
                               errmsg),
              errmsg,
@@ -2034,6 +2035,30 @@ int input_read_parameters_general(struct file_content * pfc,
       }
     }
   }
+
+  class_call(parser_read_string(pfc,"use_external_xe",&string1,&flag1,errmsg),
+               errmsg,
+               errmsg);
+  
+  if (flag1 == _TRUE_){
+	  if(string_begins_with(string1,'y') || string_begins_with(string1,'Y')){
+        pth->use_external_xe = _TRUE_;
+	
+		printf("gabe: here\n");	
+		class_call(parser_read_string(pfc, "xe_file", &string1, &flag1, errmsg),
+		  errmsg,
+		  errmsg);
+		
+      	class_test(flag1 == _FALSE_,errmsg,
+                 "Entry 'use_external_xe' is found, but no corresponding 'xe_file' were found.");
+	
+		class_alloc(pth->xe_file, sizeof(string1), pth->error_message);
+
+		strcpy(pth->xe_file, string1);
+	  }
+  }
+  //** 7.b) x_e(z) from file
+  /* Read */
 
   /** 8) Reionization parametrization */
   /* Read */
@@ -5310,6 +5335,10 @@ int input_default_params(struct background *pba,
   /** 7) Recombination algorithm */
   pth->recombination=hyrec;
   pth->recfast_photoion_mode=recfast_photoion_Tmat;
+
+  /** 7.b) xe file */
+  pth->use_external_xe = _FALSE_;
+  pth->xe_file = NULL;
 
   /** 8) Parametrization of reionization */
   pth->reio_parametrization=reio_camb;

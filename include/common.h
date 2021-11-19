@@ -108,8 +108,8 @@ int string_begins_with(char* thestring, char beginchar);
   class_build_error_string(err_out,"error in %s;\n=>%s",extra,err_mess);
 
 /* macro for calling function and returning error if it failed */
-#define class_call_except(function, error_message_from_function, error_message_output,list_of_commands) {        \
-  if (function == _FAILURE_) {                                                                                   \
+#define class_call_except(function, error_message_from_function, error_message_output,list_of_commands) { \
+	if (function == _FAILURE_) { \
     class_call_message(error_message_output,#function,error_message_from_function);                              \
     list_of_commands;                                                                                            \
     return _FAILURE_;                                                                                            \

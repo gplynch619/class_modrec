@@ -316,10 +316,12 @@ int thermodynamics_init(
 
   /** - allocate and assign all temporary structures and indices */
   class_alloc(ptw, sizeof(struct thermo_workspace), pth->error_message);
-  class_call(thermodynamics_workspace_init(ppr,pba,pth,ptw),
+	
+	class_call(thermodynamics_workspace_init(ppr,pba,pth,ptw),
              pth->error_message,
              pth->error_message);
-
+	
+	//thermodynamics_workspace_init(ppr, pba, pth, ptw);
   class_call(thermodynamics_indices(pba,pth,ptw),
              pth->error_message,
              pth->error_message);
@@ -680,11 +682,12 @@ int thermodynamics_workspace_init(
                                   ) {
 
   /** Summary: */
-
   /** Define local variables */
-  int index_ap;
+  int index_ap, row, status;
   /* for varying fundamental constants */
-  double alpha = 1., me = 1.;
+  double alpha = 1., me = 1., tmp1, tmp2;
+  FILE * xefile; // pointer to be used for xe_file read in
+
 
   /** - number of z values */
   ptw->Nz_reco_lin = ppr->thermo_Nz_lin;
@@ -728,7 +731,41 @@ int thermodynamics_workspace_init(
   ptw->ptdw->x_reio = 1.+2.*ptw->fHe;
   ptw->ptdw->x_noreio = 1.+2.*ptw->fHe;
 
-  /** - define approximations */
+	//Allocate tables for x_e(z) from external file, if using
+  
+	if(pth->use_external_xe == _TRUE_){
+		xefile = fopen(pth->xe_file, "r");
+		class_test(xefile == NULL, pth->error_message, "Could not open file %s!", pth->xe_file);
+		for(row=0, status=2; status==2; row++){
+			status = fscanf(xefile, "%lf %lf", &tmp1, &tmp2);
+		}
+		rewind(xefile);
+		ptw->ptdw->xe_tablesize = row-1;
+		///now that we know how big the input file is, allocate memory for arrays
+
+		class_alloc(ptw->ptdw->z_table_from_file, sizeof(double)*ptw->ptdw->xe_tablesize, pth->error_message);
+		class_alloc(ptw->ptdw->xe_table_from_file, sizeof(double)*ptw->ptdw->xe_tablesize, pth->error_message);
+		class_alloc(ptw->ptdw->d2xe_dz2_table, sizeof(double)*ptw->ptdw->xe_tablesize, pth->error_message);
+
+		//fill tables
+		for(row=0; row<ptw->ptdw->xe_tablesize; row++){
+			status = fscanf(xefile, "%lf %lf", 
+							&ptw->ptdw->z_table_from_file[row], &ptw->ptdw->xe_table_from_file[row]);
+		}
+		fclose(xefile);
+
+		class_call(array_spline_table_lines(ptw->ptdw->z_table_from_file,
+																			ptw->ptdw->xe_tablesize,
+																			ptw->ptdw->xe_table_from_file,
+																			1,
+																			ptw->ptdw->d2xe_dz2_table,
+																			_SPLINE_EST_DERIV_,
+																			pth->error_message),
+						 pth->error_message,
+						 pth->error_message); //fills second derivative for spline interpolation
+	}
+  
+	/** - define approximations */
   index_ap=0;
   /* Approximations have to appear in chronological order here! */
   class_define_index(ptw->ptdw->index_ap_brec,_TRUE_,index_ap,1); // before H- and He-recombination
@@ -1770,6 +1807,12 @@ int thermodynamics_workspace_free(
     free(ptw->ptdw->precfast);
     break;
   }
+
+	if(pth->use_external_xe==_TRUE_){
+		free(ptw->ptdw->z_table_from_file);
+		free(ptw->ptdw->xe_table_from_file);
+		free(ptw->ptdw->d2xe_dz2_table);
+	}
 
   free(ptw->ptrp->reionization_parameters);
   free(ptw->ptdw);
@@ -3875,6 +3918,8 @@ int thermodynamics_ionization_fractions(
   double rescale_rhs = 1., rescale_T = 1.;
   double alpha = 1., me = 1.;
 
+	int last_index, result_size=1;
+
   if (pth->has_varconst == _TRUE_) {
     class_call(background_varconst_of_z(pba, z, &alpha, &me),
                pba->error_message,
@@ -4004,8 +4049,24 @@ int thermodynamics_ionization_fractions(
 
   }
 
-  ptdw->x_noreio = x;
-
+  /*** OVERWRITE HERE ***/
+	if(pth->use_external_xe==_TRUE_){
+		class_call(array_interpolate_spline(ptdw->z_table_from_file,
+								ptdw->xe_tablesize,
+								ptdw->xe_table_from_file,
+								ptdw->d2xe_dz2_table,
+								1.0,
+								z,
+								&last_index,
+								&x,
+								result_size,
+								pth->error_message),
+						pth->error_message,
+						pth->error_message);
+		ptdw->x_noreio = x;
+	} else{
+  		ptdw->x_noreio = x;
+	}
   /** - If z is during reionization, also calculate the reionized x */
   if (current_ap == ptdw->index_ap_reio) {
 
