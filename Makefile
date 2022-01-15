@@ -18,7 +18,8 @@ vpath .base build
 ########################################################
 
 # your C compiler:
-CC       = gcc
+#CC       = gcc
+CC        = /opt/homebrew/Cellar/gcc/11.2.0_3/bin/gcc-11
 #CC       = icc
 #CC       = pgcc
 
@@ -30,7 +31,8 @@ AR        = ar rv
 # substitute python3 to python in the line below, or you can simply
 # add a compilation option on the terminal command line:
 # "PYTHON=python3 make all" (Thanks to Marius Millea for python3 compatibility)
-PYTHON ?= python
+#PYTHON ?= python
+PYTHON =/Users/gabe/opt/miniforge3/envs/classy-forge/bin/python
 
 # your optimization flag
 OPTFLAG = -O3

@@ -68,9 +68,6 @@ struct thermodynamics
 
   enum recombination_algorithm recombination; /**< recombination code */
 
-  char * xe_file; /*** file name for ionization fraction if read in by file*/
-  int use_external_xe;
-
   enum recfast_photoion_modes recfast_photoion_mode; /**< photo-ionization coefficient mode of the recfast algorithm */
 
   enum reionization_parametrization reio_parametrization; /**< reionization scheme */
@@ -85,6 +82,18 @@ struct thermodynamics
 
   short compute_damping_scale; /**< do we want to compute the simplest analytic approximation to the photon damping (or diffusion) scale? */
 
+  /* Parameters for X_e(z) perturbations */
+  short perturb_xe; //True or false depending on if we are perturbing
+  
+  double * xe_pert_amps; /**< vector storing amplitudes of xe perturbations */
+  double * xe_pert_pivots; /**<vector storing centers z_i of gaussian basis functions. */
+
+  int xe_pert_num; /**< Number of gaussian basis functions */
+  double xe_pert_dz;
+  double xe_pert_width; /**< Width of gaussian perturbations */
+  double zmin_pert; /**< z_min for xe perturbations */
+  double zmax_pert; /**< x_max for xe perturbations */
+  
   /** parameters for reio_camb */
 
   double reionization_width; /**< width of H reionization */
@@ -183,7 +192,9 @@ struct thermodynamics
 
   //@{
 
-  int index_th_xe;            /**< ionization fraction \f$ x_e \f$ */
+  int index_th_xe;            /**< total ionization fraction \f$ x_e \f$ */
+  int index_th_xe_fid;        /**< fiducial (no perturbation) ionization fraction \f$ x_e \f$ */
+  int index_th_xe_pert;       /**< fiducial (no perturbation) ionization fraction \f$ x_e \f$ */
   int index_th_dkappa;        /**< Thomson scattering rate \f$ d \kappa / d \tau\f$ (units 1/Mpc) */
   int index_th_tau_d;         /**< Baryon drag optical depth */
   int index_th_ddkappa;       /**< scattering rate derivative \f$ d^2 \kappa / d \tau^2 \f$ */
@@ -344,6 +355,8 @@ struct thermo_diffeq_workspace {
   double x_noreio;   /**< Electron ionization fraction, not taking into account reionization */
   double x_reio;     /**< Electron ionization fraction, taking into account reionization */
 
+  double x_fid;     /**< Fiducial electron ionization fraction, before perturbations applied*/
+
   double x;          /**< total ionization fraction following usual CMB convention, n_free/n_H = x_H + fHe * x_He; */
 
   double Tmat;       /**< matter temperature */
@@ -364,10 +377,8 @@ struct thermo_diffeq_workspace {
   double * ap_z_limits;       /**< vector storing ending limits of each approximation */
   double * ap_z_limits_delta; /**< vector storing smoothing deltas of each approximation */
 
-  double * z_table_from_file;
-  double * xe_table_from_file;
-  double * d2xe_dz2_table; // second derivative of xe w.r.t. z
-  int xe_tablesize;
+  //xe_perturbations 
+  double xe_pert;        /**< P */
 
   int require_H;  /** in given approximation scheme, do we need to integrate hydrogen ionization fraction? */
   int require_He; /** in given approximation scheme, do we need to integrate helium ionization fraction? */
@@ -605,7 +616,12 @@ extern "C" {
                                           struct thermo_workspace * ptw,
                                           int current_ap
                                           );
-
+  
+  int thermodynamics_xe_perturbation_at_z(
+		struct thermodynamics * pth,
+		double z,
+		double * duz);
+	
   int thermodynamics_reionization_function(double z,
                                            struct thermodynamics * pth,
                                            struct thermo_reionization_parameters * preio,

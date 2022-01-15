@@ -2036,30 +2036,46 @@ int input_read_parameters_general(struct file_content * pfc,
     }
   }
 
-  class_call(parser_read_string(pfc,"use_external_xe",&string1,&flag1,errmsg),
-               errmsg,
-               errmsg);
+  /* 7.b) XE PERTURBATION PARAMETERS */
+  class_call(parser_read_string(pfc,"perturb_xe",&string1,&flag1,errmsg), errmsg, errmsg);
+
   
   if (flag1 == _TRUE_){
 	  if(string_begins_with(string1,'y') || string_begins_with(string1,'Y')){
-        pth->use_external_xe = _TRUE_;
-	
-		printf("gabe: here\n");	
-		class_call(parser_read_string(pfc, "xe_file", &string1, &flag1, errmsg),
-		  errmsg,
-		  errmsg);
+        pth->perturb_xe = _TRUE_;
+		class_read_int("xe_pert_num", pth->xe_pert_num)
+		//perturbation amplitudes
+		class_read_list_of_doubles("xe_pert_amps",pth->xe_pert_amps, pth->xe_pert_num);
+  
+	  	class_call(parser_read_double(pfc,"zmin_pert",&param1,&flag2,errmsg), errmsg, errmsg);
 		
-      	class_test(flag1 == _FALSE_,errmsg,
-                 "Entry 'use_external_xe' is found, but no corresponding 'xe_file' were found.");
-	
-		class_alloc(pth->xe_file, sizeof(string1), pth->error_message);
+		if (flag2 == _TRUE_){
+  			pth->zmin_pert = param1; 
+  		}
+  
+	  	class_call(parser_read_double(pfc,"zmax_pert",&param1,&flag2,errmsg), errmsg, errmsg);
+  
+		if (flag2 == _TRUE_){
+  			pth->zmax_pert = param1; 
+  		}
 
-		strcpy(pth->xe_file, string1);
+		pth->xe_pert_dz = (pth->zmax_pert - pth->zmin_pert)/(pth->xe_pert_num);
+
+		pth->xe_pert_width = pth->xe_pert_dz/(2.0*sqrt(2.*log(2))); 
+
+        class_alloc(pth->xe_pert_pivots, pth->xe_pert_num*sizeof(double),errmsg);
+		for(int i=0; i<pth->xe_pert_num; i++){
+			pth->xe_pert_pivots[i] = pth->zmin_pert + i*pth->xe_pert_dz;
+		}
 	  }
   }
-  //** 7.b) x_e(z) from file
-  /* Read */
+    
+  
+  class_call(parser_read_double(pfc,"zmax_pert",&param1,&flag1,errmsg), errmsg, errmsg);
 
+  if (flag1 == _TRUE_){
+  	pth->zmin_pert = param1; 
+  }
   /** 8) Reionization parametrization */
   /* Read */
   class_call(parser_read_string(pfc,"reio_parametrization",&string1,&flag1,errmsg),
@@ -5337,8 +5353,12 @@ int input_default_params(struct background *pba,
   pth->recfast_photoion_mode=recfast_photoion_Tmat;
 
   /** 7.b) xe file */
-  pth->use_external_xe = _FALSE_;
-  pth->xe_file = NULL;
+  pth->perturb_xe = _FALSE_;
+  pth->xe_pert_amps = NULL;
+  pth->xe_pert_num = 0;
+  pth->zmin_pert = 300;
+  pth->zmax_pert = 2500;
+  pth->xe_pert_width = 0; 
 
   /** 8) Parametrization of reionization */
   pth->reio_parametrization=reio_camb;

@@ -176,7 +176,7 @@
                errmsg,                                                          \
                errmsg);                                                         \
     class_test(flag_temp == _FALSE_, errmsg,                                    \
-               "Entry '%s' is required but not found!", name)                   \
+               "Entry '%s' is required but not found!", name);                  \
     class_test(entries_read_temp != siz, errmsg,                                \
                "Number of entries of '%s' (%d) does not match expected number (%d).", \
                name,entries_read_temp, siz);                                    \

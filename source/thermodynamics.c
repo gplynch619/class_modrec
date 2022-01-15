@@ -405,6 +405,31 @@ int thermodynamics_free(
   return _SUCCESS_;
 }
 
+int thermodynamics_xe_perturbation_at_z(
+		struct thermodynamics * pth,
+		double z,
+		double * duz){
+	
+	double width = pth->xe_pert_width;
+	double temp_duz = 0;
+	const double pi = 4*atan(1.0);
+	//double norm = 1.0/(sqrt(2*pi*width*width));
+	double norm = 1.0;
+
+	for(int i=0; i<pth->xe_pert_num; i++){
+		double qi, zi;
+		qi = pth->xe_pert_amps[i];
+		zi = pth->xe_pert_pivots[i];
+		temp_duz += norm*qi*exp(-0.5*(z-zi)*(z-zi)/(2*width*width)); //adding up contributions from each basis function
+	}
+
+	*duz = temp_duz;
+
+	return _SUCCESS_;
+
+}
+
+
 /**
  * Infer the primordial helium mass fraction from standard BBN
  * calculations, as a function of the baryon density and expansion
@@ -730,40 +755,6 @@ int thermodynamics_workspace_init(
   // Initialize ionisation fraction.
   ptw->ptdw->x_reio = 1.+2.*ptw->fHe;
   ptw->ptdw->x_noreio = 1.+2.*ptw->fHe;
-
-	//Allocate tables for x_e(z) from external file, if using
-  
-	if(pth->use_external_xe == _TRUE_){
-		xefile = fopen(pth->xe_file, "r");
-		class_test(xefile == NULL, pth->error_message, "Could not open file %s!", pth->xe_file);
-		for(row=0, status=2; status==2; row++){
-			status = fscanf(xefile, "%lf %lf", &tmp1, &tmp2);
-		}
-		rewind(xefile);
-		ptw->ptdw->xe_tablesize = row-1;
-		///now that we know how big the input file is, allocate memory for arrays
-
-		class_alloc(ptw->ptdw->z_table_from_file, sizeof(double)*ptw->ptdw->xe_tablesize, pth->error_message);
-		class_alloc(ptw->ptdw->xe_table_from_file, sizeof(double)*ptw->ptdw->xe_tablesize, pth->error_message);
-		class_alloc(ptw->ptdw->d2xe_dz2_table, sizeof(double)*ptw->ptdw->xe_tablesize, pth->error_message);
-
-		//fill tables
-		for(row=0; row<ptw->ptdw->xe_tablesize; row++){
-			status = fscanf(xefile, "%lf %lf", 
-							&ptw->ptdw->z_table_from_file[row], &ptw->ptdw->xe_table_from_file[row]);
-		}
-		fclose(xefile);
-
-		class_call(array_spline_table_lines(ptw->ptdw->z_table_from_file,
-																			ptw->ptdw->xe_tablesize,
-																			ptw->ptdw->xe_table_from_file,
-																			1,
-																			ptw->ptdw->d2xe_dz2_table,
-																			_SPLINE_EST_DERIV_,
-																			pth->error_message),
-						 pth->error_message,
-						 pth->error_message); //fills second derivative for spline interpolation
-	}
   
 	/** - define approximations */
   index_ap=0;
@@ -884,6 +875,8 @@ int thermodynamics_indices(
 
   /* Free electron fraction */
   class_define_index(pth->index_th_xe,_TRUE_,index_th,1);
+  class_define_index(pth->index_th_xe_fid,_TRUE_,index_th,1);
+  class_define_index(pth->index_th_xe_pert,_TRUE_,index_th,1);
   /* Optical depth and related quantities */
   class_define_index(pth->index_th_dkappa,_TRUE_,index_th,1);
   class_define_index(pth->index_th_ddkappa,_TRUE_,index_th,1);
@@ -1807,12 +1800,6 @@ int thermodynamics_workspace_free(
     free(ptw->ptdw->precfast);
     break;
   }
-
-	if(pth->use_external_xe==_TRUE_){
-		free(ptw->ptdw->z_table_from_file);
-		free(ptw->ptdw->xe_table_from_file);
-		free(ptw->ptdw->d2xe_dz2_table);
-	}
 
   free(ptw->ptrp->reionization_parameters);
   free(ptw->ptdw);
@@ -2743,7 +2730,7 @@ int thermodynamics_sources(
 
   /** Define local variables */
   /* Shorthand notations */
-  double z,x=0.,Tmat,Trad,dTmat;
+  double z,x=0.,xfid=0.,xpert=0.,Tmat,Trad,dTmat;
   /* Varying fundamental constants */
   double sigmaTrescale = 1.,alpha = 1.,me = 1.;
   /* Recfast smoothing */
@@ -2801,6 +2788,8 @@ int thermodynamics_sources(
 
   /* get x */
   x = ptdw->x_reio;
+  xfid = ptdw->x_fid;
+  xpert = ptdw->xe_pert;
 
   /** - In the recfast case, we manually smooth the results a bit */
 
@@ -2825,6 +2814,8 @@ int thermodynamics_sources(
 
   /* ionization fraction */
   pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_xe] = x;
+  pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_xe_fid] = xfid;
+  pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_xe_pert] = xpert;
 
   /* Tb */
   pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_Tb] = Tmat;
@@ -3209,12 +3200,10 @@ int thermodynamics_calculate_opticals(
                                                        pth->tt_size,
                                                        pth->thermodynamics_table,
                                                        pth->th_size,
-                                                       pth->index_th_dkappa,
+													   pth->index_th_dkappa,
                                                        pth->index_th_dddkappa,
                                                        pth->index_th_g,
-                                                       pth->error_message),
-             pth->error_message,
-             pth->error_message);
+                                                       pth->error_message), pth->error_message,pth->error_message);
 
   /** - --> compute visibility: \f$ g= (d \kappa/d \tau) e^{- \kappa} \f$ */
 
@@ -4048,25 +4037,10 @@ int thermodynamics_ionization_fractions(
     ptdw->x_He = x_He;
 
   }
-
-  /*** OVERWRITE HERE ***/
-	if(pth->use_external_xe==_TRUE_){
-		class_call(array_interpolate_spline(ptdw->z_table_from_file,
-								ptdw->xe_tablesize,
-								ptdw->xe_table_from_file,
-								ptdw->d2xe_dz2_table,
-								1.0,
-								z,
-								&last_index,
-								&x,
-								result_size,
-								pth->error_message),
-						pth->error_message,
-						pth->error_message);
-		ptdw->x_noreio = x;
-	} else{
-  		ptdw->x_noreio = x;
-	}
+  
+  //ionizaiton fraction without ionization
+  ptdw->x_noreio = x;
+  
   /** - If z is during reionization, also calculate the reionized x */
   if (current_ap == ptdw->index_ap_reio) {
 
@@ -4079,7 +4053,24 @@ int thermodynamics_ionization_fractions(
                pth->error_message);
   }
 
-  ptdw->x_reio = x;
+  
+  ptdw->x_fid = x;
+
+
+  /*The above is x_fiducial for this cosmology */
+  
+  /*** OVERWRITE HERE ***/
+  double duz=0.;
+  ptdw->xe_pert = duz;
+  if(pth->perturb_xe==_TRUE_){
+	  //if(z>=pth->zmin_pert){
+		 //if(z<=pth->zmax_pert){
+		////compute gaussian
+	thermodynamics_xe_perturbation_at_z(pth, z, &duz);
+	ptdw->xe_pert = duz;
+  }
+  
+  ptdw->x_reio = ptdw->x_fid*(1.0 + ptdw->xe_pert); // X_e = X^f_e(1 + du(z))
 
   return _SUCCESS_;
 }
@@ -4331,6 +4322,8 @@ int thermodynamics_output_titles(
   class_store_columntitle(titles,"z",_TRUE_);
   class_store_columntitle(titles,"conf. time [Mpc]",_TRUE_);
   class_store_columntitle(titles,"x_e",_TRUE_);
+  class_store_columntitle(titles,"x_fid",_TRUE_);
+  class_store_columntitle(titles,"xe_pert",_TRUE_);
   class_store_columntitle(titles,"kappa' [Mpc^-1]",_TRUE_);
   //class_store_columntitle(titles,"kappa''",_TRUE_);
   //class_store_columntitle(titles,"kappa'''",_TRUE_);
@@ -4398,9 +4391,9 @@ int thermodynamics_output_data(
     class_store_double(dataptr,z,_TRUE_,storeidx);
     class_store_double(dataptr,tau,_TRUE_,storeidx);
     class_store_double(dataptr,pvecthermo[pth->index_th_xe],_TRUE_,storeidx);
+    class_store_double(dataptr,pvecthermo[pth->index_th_xe_fid],_TRUE_,storeidx);
+    class_store_double(dataptr,pvecthermo[pth->index_th_xe_pert],_TRUE_,storeidx);
     class_store_double(dataptr,pvecthermo[pth->index_th_dkappa],_TRUE_,storeidx);
-    //class_store_double(dataptr,pvecthermo[pth->index_th_ddkappa],_TRUE_,storeidx);
-    //class_store_double(dataptr,pvecthermo[pth->index_th_dddkappa],_TRUE_,storeidx);
     class_store_double(dataptr,pvecthermo[pth->index_th_exp_m_kappa],_TRUE_,storeidx);
     class_store_double(dataptr,pvecthermo[pth->index_th_g],_TRUE_,storeidx);
     //class_store_double(dataptr,pvecthermo[pth->index_th_dg],_TRUE_,storeidx);
