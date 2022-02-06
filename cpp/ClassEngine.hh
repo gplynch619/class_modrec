@@ -143,18 +143,18 @@ private:
   //structures class en commun
   struct file_content fc;
   struct precision pr;        /* for precision parameters */
-  struct background ba;       /* for cosmological background */
-  struct thermo th;           /* for thermodynamics */
-  struct perturbs pt;         /* for source functions */
-  struct transfers tr;        /* for transfer functions */
+  struct background ba;      /* for cosmological background */
+  struct thermodynamics th;           /* for thermodynamics */
+  struct perturbations pt;         /* for source functions */
+  struct transfer tr;        /* for transfer functions */
   struct primordial pm;       /* for primordial spectra */
-  struct spectra sp;          /* for output spectra */
-  struct nonlinear nl;        /* for non-linear spectra */
+  struct harmonic sp;          /* for output spectra */
+  struct fourier nl;        /* for non-linear spectra */
   struct lensing le;          /* for lensed spectra */
   struct distortions sd;      /* for spectral distortions */
   struct output op;           /* for output files */
 
-  ErrorMsg _errmsg;            /* for error messages */
+  ErrorMsg _errmsg;
   double * cl;
 
   //helpers
@@ -168,12 +168,12 @@ private:
 		 struct file_content *pfc,
 		 struct precision * ppr,
 		 struct background * pba,
-		 struct thermo * pth,
-		 struct perturbs * ppt,
-		 struct transfers * ptr,
+		 struct thermodynamics * pth,
+		 struct perturbations * ppt,
+		 struct transfer * ptr,
 		 struct primordial * ppm,
-		 struct spectra * psp,
-		 struct nonlinear * pnl,
+		 struct harmonic * psp,
+		 struct fourier * pnl,
 		 struct lensing * ple,
 		 struct distortions * psd,
 		 struct output * pop,

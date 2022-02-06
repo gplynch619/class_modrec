@@ -405,7 +405,7 @@ int thermodynamics_free(
   return _SUCCESS_;
 }
 
-int thermodynamics_xe_perturbation_at_z(
+int thermodynamics_gaussian_perturbation_at_z(
 		struct thermodynamics * pth,
 		double z,
 		double * duz){
@@ -413,14 +413,46 @@ int thermodynamics_xe_perturbation_at_z(
 	double width = pth->xe_pert_width;
 	double temp_duz = 0;
 	const double pi = 4*atan(1.0);
-	//double norm = 1.0/(sqrt(2*pi*width*width));
+	/* double norm = 1.0/(sqrt(2*pi*width*width)); */
 	double norm = 1.0;
 
 	for(int i=0; i<pth->xe_pert_num; i++){
 		double qi, zi;
 		qi = pth->xe_pert_amps[i];
 		zi = pth->xe_pert_pivots[i];
-		temp_duz += norm*qi*exp(-0.5*(z-zi)*(z-zi)/(2*width*width)); //adding up contributions from each basis function
+		temp_duz += norm*qi*exp(-0.5*(z-zi)*(z-zi)/(width*width)); //adding up contributions from each basis function
+	}
+
+	*duz = temp_duz;
+
+	return _SUCCESS_;
+
+}
+
+int thermodynamics_spline_perturbation_at_z(
+		struct thermodynamics * pth,
+		double z,
+		double * duz){
+	
+	double width = pth->xe_pert_width;
+	double temp_duz = 0;
+	
+	double norm = 1.0;
+
+	double h = 1.5*width;
+
+	for(int i=0; i<pth->xe_pert_num; i++){
+		double qi, zi, p;
+		qi = pth->xe_pert_amps[i];
+		zi = pth->xe_pert_pivots[i];
+		p = fabs(z-zi)/h;
+		if(p<=1.0){
+			temp_duz += qi*(1.0/6.0)*((2-p)*(2-p)*(2-p) - 4.0*(1-p)*(1-p)*(1-p));
+		} else if(p>1.0 && p<=2.0){
+			temp_duz += qi*(1.0/6.0)*(2-p)*(2-p)*(2-p);
+		} else {
+			temp_duz += 0;
+		}
 	}
 
 	*duz = temp_duz;
@@ -4040,7 +4072,8 @@ int thermodynamics_ionization_fractions(
   
   //ionizaiton fraction without ionization
   ptdw->x_noreio = x;
-  
+
+
   /** - If z is during reionization, also calculate the reionized x */
   if (current_ap == ptdw->index_ap_reio) {
 
@@ -4052,24 +4085,22 @@ int thermodynamics_ionization_fractions(
                pth->error_message,
                pth->error_message);
   }
-
   
   ptdw->x_fid = x;
-
-
   /*The above is x_fiducial for this cosmology */
   
-  /*** OVERWRITE HERE ***/
+  // add  before reionization
   double duz=0.;
   ptdw->xe_pert = duz;
   if(pth->perturb_xe==_TRUE_){
-	  //if(z>=pth->zmin_pert){
-		 //if(z<=pth->zmax_pert){
-		////compute gaussian
-	thermodynamics_xe_perturbation_at_z(pth, z, &duz);
+	if(pth->use_splines == _TRUE_){	
+		thermodynamics_spline_perturbation_at_z(pth, z, &duz);
+	} else {
+		thermodynamics_gaussian_perturbation_at_z(pth, z, &duz);
+	}
 	ptdw->xe_pert = duz;
   }
-  
+ 
   ptdw->x_reio = ptdw->x_fid*(1.0 + ptdw->xe_pert); // X_e = X^f_e(1 + du(z))
 
   return _SUCCESS_;

@@ -84,6 +84,7 @@ struct thermodynamics
 
   /* Parameters for X_e(z) perturbations */
   short perturb_xe; //True or false depending on if we are perturbing
+  short use_splines; //True or false depending on if we are perturbing
   
   double * xe_pert_amps; /**< vector storing amplitudes of xe perturbations */
   double * xe_pert_pivots; /**<vector storing centers z_i of gaussian basis functions. */
@@ -91,6 +92,7 @@ struct thermodynamics
   int xe_pert_num; /**< Number of gaussian basis functions */
   double xe_pert_dz;
   double xe_pert_width; /**< Width of gaussian perturbations */
+  double xe_single_zi;
   double zmin_pert; /**< z_min for xe perturbations */
   double zmax_pert; /**< x_max for xe perturbations */
   
@@ -617,7 +619,12 @@ extern "C" {
                                           int current_ap
                                           );
   
-  int thermodynamics_xe_perturbation_at_z(
+  int thermodynamics_gaussian_perturbation_at_z(
+		struct thermodynamics * pth,
+		double z,
+		double * duz);
+  
+  int thermodynamics_spline_perturbation_at_z(
 		struct thermodynamics * pth,
 		double z,
 		double * duz);

@@ -216,12 +216,12 @@ int ClassEngine::class_main(
 			    struct file_content *pfc,
 			    struct precision * ppr,
 			    struct background * pba,
-			    struct thermo * pth,
-			    struct perturbs * ppt,
-			    struct transfers * ptr,
+			    struct thermodynamics * pth,
+			    struct perturbations * ppt,
+			    struct transfer * ptr,
 			    struct primordial * ppm,
-			    struct spectra * psp,
-			    struct nonlinear * pnl,
+			    struct harmonic * psp,
+			    struct fourier * pnl,
 			    struct lensing * ple,
 			    struct distortions * psd,
 			    struct output * pop,
@@ -247,7 +247,7 @@ int ClassEngine::class_main(
     return _FAILURE_;
   }
 
-  if (perturb_init(ppr,pba,pth,ppt) == _FAILURE_) {
+  if (perturbations_init(ppr,pba,pth,ppt) == _FAILURE_) {
     printf("\n\nError in perturb_init \n=>%s\n",ppt->error_message);
     thermodynamics_free(&th);
     background_free(&ba);
@@ -257,17 +257,17 @@ int ClassEngine::class_main(
 
   if (primordial_init(ppr,ppt,ppm) == _FAILURE_) {
     printf("\n\nError in primordial_init \n=>%s\n",ppm->error_message);
-    perturb_free(&pt);
+    perturbations_free(&pt);
     thermodynamics_free(&th);
     background_free(&ba);
     dofree=false;
     return _FAILURE_;
   }
 
-  if (nonlinear_init(ppr,pba,pth,ppt,ppm,pnl) == _FAILURE_)  {
+  if (fourier_init(ppr,pba,pth,ppt,ppm,pnl) == _FAILURE_)  {
     printf("\n\nError in nonlinear_init \n=>%s\n",pnl->error_message);
     primordial_free(&pm);
-    perturb_free(&pt);
+    perturbations_free(&pt);
     thermodynamics_free(&th);
     background_free(&ba);
     dofree=false;
@@ -276,21 +276,21 @@ int ClassEngine::class_main(
 
   if (transfer_init(ppr,pba,pth,ppt,pnl,ptr) == _FAILURE_) {
     printf("\n\nError in transfer_init \n=>%s\n",ptr->error_message);
-    nonlinear_free(&nl);
+    fourier_free(&nl);
     primordial_free(&pm);
-    perturb_free(&pt);
+    perturbations_free(&pt);
     thermodynamics_free(&th);
     background_free(&ba);
     dofree=false;
     return _FAILURE_;
   }
 
-  if (spectra_init(ppr,pba,ppt,ppm,pnl,ptr,psp) == _FAILURE_) {
+  if (harmonic_init(ppr,pba,ppt,ppm,pnl,ptr,psp) == _FAILURE_) {
     printf("\n\nError in spectra_init \n=>%s\n",psp->error_message);
     transfer_free(&tr);
-    nonlinear_free(&nl);
+    fourier_free(&nl);
     primordial_free(&pm);
-    perturb_free(&pt);
+    perturbations_free(&pt);
     thermodynamics_free(&th);
     background_free(&ba);
     dofree=false;
@@ -299,11 +299,11 @@ int ClassEngine::class_main(
 
   if (lensing_init(ppr,ppt,psp,pnl,ple) == _FAILURE_) {
     printf("\n\nError in lensing_init \n=>%s\n",ple->error_message);
-    spectra_free(&sp);
+    harmonic_free(&sp);
     transfer_free(&tr);
-    nonlinear_free(&nl);
+    fourier_free(&nl);
     primordial_free(&pm);
-    perturb_free(&pt);
+    perturbations_free(&pt);
     thermodynamics_free(&th);
     background_free(&ba);
     dofree=false;
@@ -313,11 +313,11 @@ int ClassEngine::class_main(
   if (distortions_init(ppr,pba,pth,ppt,ppm,psd) == _FAILURE_) {
     printf("\n\nError in distortions_init \n=>%s\n",psd->error_message);
     lensing_free(&le);
-    spectra_free(&sp);
+    harmonic_free(&sp);
     transfer_free(&tr);
-    nonlinear_free(&nl);
+    fourier_free(&nl);
     primordial_free(&pm);
-    perturb_free(&pt);
+    perturbations_free(&pt);
     thermodynamics_free(&th);
     background_free(&ba);
     dofree=false;
@@ -358,12 +358,12 @@ ClassEngine::freeStructs(){
     return _FAILURE_;
   }
 
-  if (nonlinear_free(&nl) == _FAILURE_) {
+  if (fourier_free(&nl) == _FAILURE_) {
     printf("\n\nError in nonlinear_free \n=>%s\n",nl.error_message);
     return _FAILURE_;
   }
 
-  if (spectra_free(&sp) == _FAILURE_) {
+  if (harmonic_free(&sp) == _FAILURE_) {
     printf("\n\nError in spectra_free \n=>%s\n",sp.error_message);
     return _FAILURE_;
   }
@@ -378,7 +378,7 @@ ClassEngine::freeStructs(){
     return _FAILURE_;
   }
 
-  if (perturb_free(&pt) == _FAILURE_) {
+  if (perturbations_free(&pt) == _FAILURE_) {
     printf("\n\nError in perturb_free \n=>%s\n",pt.error_message);
     return _FAILURE_;
   }
@@ -403,7 +403,7 @@ void ClassEngine::call_perturb_sources_at_tau(
                            double tau,
                            double * psource
                            ) {
-  if( perturb_sources_at_tau( &pt, index_md, index_ic, index_tp, tau, psource ) == _FAILURE_){
+  if( perturbations_sources_at_tau( &pt, index_md, index_ic, index_tp, tau, psource ) == _FAILURE_){
     cerr << ">>>fail getting Tk type=" << (int)index_tp <<endl;
     throw out_of_range(pt.error_message);
   }
@@ -621,7 +621,7 @@ double ClassEngine::get_sigma8(double z)
   //call to fill pvecback
   background_at_tau(&ba,tau,long_info,inter_normal, &index, pvecback);
   //background_at_tau(pba,tau,pba->long_info,pba->inter_normal,&last_index,pvecback);
-  spectra_sigma(&ba,&pm,&sp,8./ba.h,z,&sigma8);
+  harmonic_sigma(&ba,&pm,&sp,8./ba.h,z,&sigma8);
 
 #ifdef DBUG
   cout << "sigma_8= "<< sigma8 <<endl;
