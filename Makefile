@@ -18,8 +18,8 @@ vpath .base build
 ########################################################
 
 # your C compiler:
-CC       = gcc
-#CC        = /opt/homebrew/Cellar/gcc/11.2.0_3/bin/gcc-11
+#CC       = gcc
+CC        = /opt/homebrew/Cellar/gcc/11.2.0_3/bin/gcc-11
 #CC       = icc
 #CC       = pgcc
 
@@ -32,7 +32,7 @@ AR        = ar rv
 # add a compilation option on the terminal command line:
 # "PYTHON=python3 make all" (Thanks to Marius Millea for python3 compatibility)
 PYTHON ?= python3
-#PYTHON =/Users/gabe/opt/miniforge3/envs/classy-forge/bin/python
+PYTHON =/Users/gabe/opt/miniforge3/envs/classy-forge/bin/python
 
 # your optimization flag
 OPTFLAG = -O3
@@ -40,7 +40,7 @@ OPTFLAG = -O3
 #OPTFLAG = -fast
 
 # your openmp flag (comment for compiling without openmp)
-#OMPFLAG   = -Xclang -fopenmp 
+OMPFLAG   = -fopenmp 
 #OMPFLAG   =
 
 #OMPFLAG   = -mp -mp=nonuma -mp=allcores -g
@@ -49,7 +49,7 @@ OPTFLAG = -O3
 # all other compilation flags
 CCFLAG = -g -fPIC
 LDFLAG = -g -fPIC 
-LDFLAG += -lomp
+#LDFLAG += -lomp
 
 # leave blank to compile without HyRec, or put path to HyRec directory
 # (with no slash at the end: e.g. "external/RecfastCLASS")

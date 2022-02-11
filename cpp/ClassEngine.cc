@@ -212,6 +212,7 @@ void ClassEngine::printFC() {
 
 
 }
+
 int ClassEngine::class_main(
 			    struct file_content *pfc,
 			    struct precision * ppr,
@@ -344,8 +345,7 @@ int ClassEngine::computeCls(){
 
 }
 
-int
-ClassEngine::freeStructs(){
+int ClassEngine::freeStructs(){
 
 
   if (distortions_free(&sd) == _FAILURE_) {
@@ -491,7 +491,7 @@ ClassEngine::getCl(Engine::cltype t,const long &l){
 
   if (!dofree) throw out_of_range("no Cl available because CLASS failed");
 
-  if (output_total_cl_at_l(&sp,&le,&op,static_cast<double>(l),cl) == _FAILURE_){
+  if (output_total_cl_at_l(&hr,&le,&op,static_cast<double>(l),cl) == _FAILURE_){
     cerr << ">>>fail getting Cl type=" << (int)t << " @l=" << l <<endl;
     throw out_of_range(sp.error_message);
   }
