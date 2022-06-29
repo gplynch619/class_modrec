@@ -11,8 +11,10 @@ import os.path as osp
 #  GCCPATH_STRING = sbp.Popen(
 #      ['gcc', '-print-libgcc-file-name'],
 #      stdout=sbp.PIPE).communicate()[0]
+gcc_path = '/opt/homebrew/Cellar/gcc/11.3.0_1/bin/gcc-11'
+
 GCCPATH_STRING = sbp.Popen(
-    ['/opt/homebrew/Cellar/gcc/11.2.0_3/bin/gcc-11', '-print-libgcc-file-name'],
+    [gcc_path, '-print-libgcc-file-name'],
     stdout=sbp.PIPE).communicate()[0]
 #GCCPATH_STRING = "/opt/homebrew/Cellar/gcc/11.2.0_3/lib/gcc/11/gcc/aarch64-apple-darwin21/11"
 print(GCCPATH_STRING)
@@ -23,7 +25,7 @@ liblist = ["class"]
 #      ['gcc', '-lmvec'],
 #      stderr=sbp.PIPE).communicate()[1]
 MVEC_STRING = sbp.Popen(
-    ['/opt/homebrew/Cellar/gcc/11.2.0_3/bin/gcc-11','-lmvec'],
+    [gcc_path, '-lmvec'],
     stderr=sbp.PIPE).communicate()[1]
 
 if b"mvec" not in MVEC_STRING:

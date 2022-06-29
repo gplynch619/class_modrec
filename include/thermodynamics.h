@@ -314,6 +314,7 @@ struct thermodynamics
 
   short thermodynamics_verbose; /**< flag regulating the amount of information sent to standard output (none if set to zero) */
   short hyrec_verbose; /**< flag regulating the amount of information sent to standard output from hyrec (none if set to zero) */
+  int is_shooting; /** flag to indicate whether thermo module is being called as part of shooitng. If so, don't use perturbations.**/ 
 
   ErrorMsg error_message; /**< zone for writing error messages */
 
@@ -381,6 +382,7 @@ struct thermo_diffeq_workspace {
 
   //xe_perturbations 
   double xe_pert;        /**< P */
+
 
   int require_H;  /** in given approximation scheme, do we need to integrate hydrogen ionization fraction? */
   int require_He; /** in given approximation scheme, do we need to integrate helium ionization fraction? */

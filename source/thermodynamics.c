@@ -4089,19 +4089,24 @@ int thermodynamics_ionization_fractions(
   ptdw->x_fid = x;
   /*The above is x_fiducial for this cosmology */
   
-  // add  before reionization
   double duz=0.;
-  ptdw->xe_pert = duz;
-  if(pth->perturb_xe==_TRUE_){
-	if(pth->use_splines == _TRUE_){	
-		thermodynamics_spline_perturbation_at_z(pth, z, &duz);
-	} else {
-		thermodynamics_gaussian_perturbation_at_z(pth, z, &duz);
-	}
-	ptdw->xe_pert = duz;
+  if(!(pth->is_shooting)){
+	  //printf(" -> shooting flag set to  = %i \n",pth->is_shooting);
+	  ptdw->xe_pert = duz;
+	  if(pth->perturb_xe==_TRUE_){
+		if(pth->use_splines == _TRUE_){	
+			thermodynamics_spline_perturbation_at_z(pth, z, &duz);
+		} else {
+			thermodynamics_gaussian_perturbation_at_z(pth, z, &duz);
+		}
+		ptdw->xe_pert = duz;
+	  }
+	  ptdw->x_reio = ptdw->x_fid*(1.0 + ptdw->xe_pert); // X_e = X^f_e(1 + du(z))
+  } else {
+	  //printf(" -> Skipping perturbations, shooting flag set to  = %i \n",pth->is_shooting);
+
+	  ptdw->x_reio = ptdw->x_fid;
   }
- 
-  ptdw->x_reio = ptdw->x_fid*(1.0 + ptdw->xe_pert); // X_e = X^f_e(1 + du(z))
 
   return _SUCCESS_;
 }

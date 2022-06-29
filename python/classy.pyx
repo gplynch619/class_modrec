@@ -319,7 +319,7 @@ cdef class Class:
 
         """
         cdef ErrorMsg errmsg
-
+        
         # Append to the list level all the modules necessary to compute.
         level = self._check_task_dependency(level)
 

@@ -79,7 +79,7 @@ int input_init(int argc,
                                   errmsg),
              errmsg,
              errmsg);
-
+  printf("Freeing input structs\n");
   /** Free local struture */
   class_call(parser_free(&fc),
              errmsg,
@@ -1283,6 +1283,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
     pr.thermo_Nz_log = 500;
     th.thermodynamics_verbose = 0;
     th.hyrec_verbose = 0;
+	th.is_shooting = _FALSE_;
     class_call_except(thermodynamics_init(&pr,&ba,&th), th.error_message, errmsg, background_free(&ba);perturbations_free_input(&pt););
   }
 
@@ -1615,7 +1616,7 @@ int input_read_parameters_general(struct file_content * pfc,
   /** Summary: */
 
   /** - Define local variables */
-  int flag1,flag2;
+  int flag1,flag2,entries_read;
   double param1,param2;
   char string1[_ARGUMENT_LENGTH_MAX_];
   char * options_output[33] =  {"tCl","pCl","lCl","nCl","dCl","sCl","mPk","mTk","dTk","vTk","sd",
@@ -2069,11 +2070,21 @@ int input_read_parameters_general(struct file_content * pfc,
 				pth->xe_pert_pivots[i] = pth->xe_single_zi;
 			}
 		} else {
-			pth->xe_pert_dz = (pth->zmax_pert - pth->zmin_pert)/(pth->xe_pert_num);
-			pth->xe_pert_width = pth->xe_pert_dz/(2.0*sqrt(2.*log(2))); 
-			class_alloc(pth->xe_pert_pivots, pth->xe_pert_num*sizeof(double),errmsg);
-			for(int i=0; i<pth->xe_pert_num; i++){
-				pth->xe_pert_pivots[i] = pth->zmin_pert + i*pth->xe_pert_dz;
+    		class_call(parser_read_list_of_doubles(pfc, "xe_pert_pivots", &entries_read, &(pth->xe_pert_pivots), &flag2, 
+						errmsg),errmsg, errmsg);
+			
+			if(flag2 == _TRUE_){
+				class_test(entries_read != pth->xe_pert_num, errmsg, 
+						"Number of entries of '%s' (%d) does not match expected number (%d).", 
+						"xe_pert_pivots",entries_read, pth->xe_pert_num);
+				class_read_double("xe_single_width", pth->xe_pert_width);
+			} else {
+				pth->xe_pert_dz = (pth->zmax_pert - pth->zmin_pert)/(pth->xe_pert_num);
+				pth->xe_pert_width = pth->xe_pert_dz/(2.0*sqrt(2.*log(2)))/3.; 
+				class_alloc(pth->xe_pert_pivots, pth->xe_pert_num*sizeof(double),errmsg);
+				for(int i=0; i<pth->xe_pert_num; i++){
+					pth->xe_pert_pivots[i] = pth->zmin_pert + i*pth->xe_pert_dz;
+				}
 			}
 		}
 
@@ -5379,6 +5390,7 @@ int input_default_params(struct background *pba,
   pth->zmax_pert = 2500;
   pth->xe_single_zi = 1100;
   pth->xe_pert_width = 0; 
+  pth->is_shooting = _FALSE_;
 
   /** 8) Parametrization of reionization */
   pth->reio_parametrization=reio_camb;

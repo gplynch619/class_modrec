@@ -19,7 +19,7 @@ vpath .base build
 
 # your C compiler:
 #CC       = gcc
-CC        = /opt/homebrew/Cellar/gcc/11.2.0_3/bin/gcc-11
+CC        = /opt/homebrew/Cellar/gcc/11.3.0_1/bin/gcc-11
 #CC       = icc
 #CC       = pgcc
 
