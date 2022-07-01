@@ -868,6 +868,23 @@ int thermodynamics_workspace_init(
     break;
   }
 
+  /*If perturbing x_e as a joint mode, we need to allocate and fill table of second derivatives */
+  if(pth->perturb_xe){
+  	if(pth->as_joint_mode){
+	  class_call(array_spline_table_lines(pth->xe_pert_pivots,
+                                      pth->xe_pert_num,
+                                      pth->xe_pert_amps,
+                                      1,
+                                      pth->xe_mode_derivative,
+                                      _SPLINE_EST_DERIV_,
+                                      pth->error_message),
+             pth->error_message,
+             pth->error_message);
+	}
+  }
+
+
+
   /** - Allocate reionisation parameter workspace */
   class_alloc(ptw->ptrp,
               sizeof(struct thermo_reionization_parameters),
@@ -4089,22 +4106,40 @@ int thermodynamics_ionization_fractions(
   ptdw->x_fid = x;
   /*The above is x_fiducial for this cosmology */
   
-  double duz=0.;
+  double duz=0.; // delta u(z) is the perturbation
   if(!(pth->is_shooting)){
-	  //printf(" -> shooting flag set to  = %i \n",pth->is_shooting);
-	  ptdw->xe_pert = duz;
 	  if(pth->perturb_xe==_TRUE_){
-		if(pth->use_splines == _TRUE_){	
-			thermodynamics_spline_perturbation_at_z(pth, z, &duz);
-		} else {
-			thermodynamics_gaussian_perturbation_at_z(pth, z, &duz);
-		}
+		  if(pth->as_joint_mode==_TRUE_){
+			  if( (z>pth->zmin_pert) && (z<pth->zmax_pert)){
+				  int y_index;
+				  y_index = 1;
+				  class_call(array_interpolate_spline(pth->xe_pert_pivots,
+												  pth->xe_pert_num,
+												  pth->xe_pert_amps,
+												  pth->xe_mode_derivative,
+												  1,
+												  z,
+												  &y_index,
+												  &duz,
+												  1,
+												  pth->error_message),
+						  pth->error_message,
+						  pth->error_message);
+				  duz*=pth->xe_mode_amp;
+			  }
+		  } else {
+		    if(pth->use_splines == _TRUE_){	
+		      thermodynamics_spline_perturbation_at_z(pth, z, &duz);
+		    } else {
+			  thermodynamics_gaussian_perturbation_at_z(pth, z, &duz);
+			}
+	  	  }
+		
 		ptdw->xe_pert = duz;
 	  }
 	  ptdw->x_reio = ptdw->x_fid*(1.0 + ptdw->xe_pert); // X_e = X^f_e(1 + du(z))
   } else {
 	  //printf(" -> Skipping perturbations, shooting flag set to  = %i \n",pth->is_shooting);
-
 	  ptdw->x_reio = ptdw->x_fid;
   }
 

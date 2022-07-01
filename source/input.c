@@ -2047,8 +2047,18 @@ int input_read_parameters_general(struct file_content * pfc,
 
 		class_read_int("xe_pert_num", pth->xe_pert_num);
 		//perturbation amplitudes
+
+		class_call(parser_read_string(pfc, "as_joint_mode",&string1,&flag2,errmsg), errmsg, errmsg);
+
+		if(string_begins_with(string1,'y') || string_begins_with(string1, 'Y')){ pth->as_joint_mode= _TRUE_; }		
+
 		class_read_list_of_doubles("xe_pert_amps",pth->xe_pert_amps, pth->xe_pert_num);
-  
+		
+		if(pth->as_joint_mode){
+			class_read_double("xe_mode_amp", pth->xe_mode_amp);
+			class_alloc(pth->xe_mode_derivative, pth->xe_pert_num*sizeof(double),errmsg);
+		}
+
 	  	class_call(parser_read_double(pfc,"zmin_pert",&param1,&flag2,errmsg), errmsg, errmsg);	
 		if (flag2 == _TRUE_){
   			pth->zmin_pert = param1; 
@@ -5384,8 +5394,11 @@ int input_default_params(struct background *pba,
   /** 7.b) xe file */
   pth->perturb_xe = _FALSE_;
   pth->use_splines = _FALSE_;
+  pth->as_joint_mode = _FALSE_;
   pth->xe_pert_amps = NULL;
+  pth->xe_mode_derivative = NULL;
   pth->xe_pert_num = 0;
+  pth->xe_mode_amp = 0;
   pth->zmin_pert = 300;
   pth->zmax_pert = 2500;
   pth->xe_single_zi = 1100;

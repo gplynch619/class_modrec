@@ -85,14 +85,18 @@ struct thermodynamics
   /* Parameters for X_e(z) perturbations */
   short perturb_xe; //True or false depending on if we are perturbing
   short use_splines; //True or false depending on if we are perturbing
-  
+  short as_joint_mode; //True if the perturbation is to be treated as a joint mode and scaled
+					   //simultaneously, or if each basis function is to be scaled separately
+
   double * xe_pert_amps; /**< vector storing amplitudes of xe perturbations */
   double * xe_pert_pivots; /**<vector storing centers z_i of gaussian basis functions. */
+  double * xe_mode_derivative;
 
   int xe_pert_num; /**< Number of gaussian basis functions */
   double xe_pert_dz;
   double xe_pert_width; /**< Width of gaussian perturbations */
   double xe_single_zi;
+  double xe_mode_amp; /**< Amplitude to scale joint mode by **/
   double zmin_pert; /**< z_min for xe perturbations */
   double zmax_pert; /**< x_max for xe perturbations */
   
