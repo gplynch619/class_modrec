@@ -32,6 +32,12 @@ enum reionization_parametrization {
   reio_inter       /**< linear interpolation between specified points */
 };
 
+enum xe_perturbation_type {
+	xe_pert_none,
+	xe_pert_basis,
+	xe_pert_control
+};
+
 /**
  * Is the input parameter the reionization redshift or optical depth?
  */
@@ -83,14 +89,20 @@ struct thermodynamics
   short compute_damping_scale; /**< do we want to compute the simplest analytic approximation to the photon damping (or diffusion) scale? */
 
   /* Parameters for X_e(z) perturbations */
-  short perturb_xe; //True or false depending on if we are perturbing
+  enum xe_perturbation_type xe_pert_type;
+  
   short use_splines; //True or false depending on if we are perturbing
   short as_joint_mode; //True if the perturbation is to be treated as a joint mode and scaled
 					   //simultaneously, or if each basis function is to be scaled separately
 
+
   double * xe_pert_amps; /**< vector storing amplitudes of xe perturbations */
   double * xe_pert_pivots; /**<vector storing centers z_i of gaussian basis functions. */
   double * xe_mode_derivative;
+
+  // for control point mode
+  double * xe_control_points;
+  double * xe_control_pivots;
 
   int xe_pert_num; /**< Number of gaussian basis functions */
   double xe_pert_dz;
@@ -98,7 +110,7 @@ struct thermodynamics
   double xe_single_zi;
   double xe_mode_amp; /**< Amplitude to scale joint mode by **/
   double zmin_pert; /**< z_min for xe perturbations */
-  double zmax_pert; /**< x_max for xe perturbations */
+  double zmax_pert; /**< z_max for xe perturbations */
   
   /** parameters for reio_camb */
 
@@ -384,9 +396,7 @@ struct thermo_diffeq_workspace {
   double * ap_z_limits;       /**< vector storing ending limits of each approximation */
   double * ap_z_limits_delta; /**< vector storing smoothing deltas of each approximation */
 
-  //xe_perturbations 
-  double xe_pert;        /**< P */
-
+  double xe_pert;
 
   int require_H;  /** in given approximation scheme, do we need to integrate hydrogen ionization fraction? */
   int require_He; /** in given approximation scheme, do we need to integrate helium ionization fraction? */
@@ -647,7 +657,18 @@ extern "C" {
   int thermodynamics_output_data(struct background * pba,
                                  struct thermodynamics *pth,
                                  int number_of_titles,
-                                 double *data);
+																 double *data);
+
+	int thermodynamics_control_rescaling(struct thermodynamics * pth, double xez, double * duz);
+
+	double thermodynamics_rescaling_function(double amplitude, double vshift, double xe_max); 	
+
+	int thermodynamics_root_bracket(double (*func)(double,double,double), double shift, double mult,
+																	double * x1, double *x2, ErrorMsg error_message);
+
+	//finds root of func(x,.) - shift
+	double thermodynamics_root_bisect(double (*func)(double, double, double), double shift, double mult,
+																double x1, double x2, ErrorMsg error_message);
 
 #ifdef __cplusplus
 }
