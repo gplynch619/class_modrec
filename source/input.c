@@ -2050,11 +2050,25 @@ int input_read_parameters_general(struct file_content * pfc,
 		} else if (strcmp(string1,"control") == 0){
 	  		pth->xe_pert_type = xe_pert_control;
 			printf("xe_type is control\n");
-	} else {
+		} else {
 			class_stop(errmsg, "You specified 'xe_pert_type' as '%s'. It has to be one of {'xe_pert_none', 'xe_pert_basis', 'xe_pert_control'}.",string1);
-	}
+		}
 	}
 
+	if (input_verbose > 1){
+		switch(pth->xe_pert_type){
+			case xe_pert_none:
+				printf("xe_pert_type is 'none'\n");
+				break;
+			case xe_pert_basis:
+				printf("xe_pert_type is 'basis'\n");
+				break;
+			case xe_pert_control:
+				printf("xe_pert_type is 'control'\n");
+				break;
+		}	
+	}
+	
 	switch (pth->xe_pert_type) {
 		
 		case xe_pert_none:
@@ -2143,8 +2157,7 @@ int input_read_parameters_general(struct file_content * pfc,
 
 			class_call(parser_read_list_of_doubles(pfc, "xe_control_pivots", 
 									&entries_read, &(pth->xe_control_pivots), &flag2, errmsg),errmsg, errmsg);
-
-	  	break;	  
+	  		break;	  
 	}
 	
 		
