@@ -2055,20 +2055,6 @@ int input_read_parameters_general(struct file_content * pfc,
 		}
 	}
 
-	if (input_verbose > 1){
-		switch(pth->xe_pert_type){
-			case xe_pert_none:
-				printf("xe_pert_type is 'none'\n");
-				break;
-			case xe_pert_basis:
-				printf("xe_pert_type is 'basis'\n");
-				break;
-			case xe_pert_control:
-				printf("xe_pert_type is 'control'\n");
-				break;
-		}	
-	}
-	
 	switch (pth->xe_pert_type) {
 		
 		case xe_pert_none:
