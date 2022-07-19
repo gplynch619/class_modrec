@@ -2,6 +2,7 @@ output/
 *~
 build/
 class
+Makefile
 *.prof
 *.ini
 libclass.a

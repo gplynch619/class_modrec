@@ -2049,7 +2049,6 @@ int input_read_parameters_general(struct file_content * pfc,
 			pth->xe_pert_type = xe_pert_basis;
 		} else if (strcmp(string1,"control") == 0){
 	  		pth->xe_pert_type = xe_pert_control;
-			printf("xe_type is control\n");
 		} else {
 			class_stop(errmsg, "You specified 'xe_pert_type' as '%s'. It has to be one of {'xe_pert_none', 'xe_pert_basis', 'xe_pert_control'}.",string1);
 		}

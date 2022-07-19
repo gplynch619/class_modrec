@@ -2158,13 +2158,12 @@ int thermodynamics_vector_init(
 * @return the error status
 */
 
-int thermodynamics_reionization_evolve_with_tau(
-																								struct thermodynamics_parameters_and_workspace * ptpaw,
-																								double mz_ini,
-																								double mz_end,
-																								double * mz_output,
-																								int mz_size
-																								) {
+int thermodynamics_reionization_evolve_with_tau(struct thermodynamics_parameters_and_workspace * ptpaw,
+												double mz_ini,
+												double mz_end,
+												double * mz_output,
+												int mz_size
+												) {
 
 	/** Summary: */
 
@@ -2293,14 +2292,15 @@ int thermodynamics_reionization_evolve_with_tau(
 
 	/* infer corresponding tau_reio */
 	class_call(thermodynamics_reionization_get_tau(ppr,
-																								pba,
-																								pth,
-																								ptw),
+													pba,
+													pth,
+													ptw),
 						pth->error_message,
 						pth->error_message);
 
 	tau_sup=ptw->reionization_optical_depth;
 
+	printf("comparing tau_sup (%lf) to pth->tau_reio (%lf)\n", tau_sup, pth->tau_reio);
 	class_test(tau_sup < pth->tau_reio,
 						pth->error_message,
 						"parameters are such that reionization cannot start after z_start_max");
@@ -2982,12 +2982,10 @@ int thermodynamics_sources(
 * @return the error status
 */
 
-int thermodynamics_reionization_get_tau(
-																				struct precision * ppr,
-																				struct background * pba,
-																				struct thermodynamics * pth,
-																				struct thermo_workspace * ptw
-																				) {
+int thermodynamics_reionization_get_tau(struct precision * ppr,
+										struct background * pba,
+										struct thermodynamics * pth,
+										struct thermo_workspace * ptw) {
 
 	/** Summary: */
 
@@ -3043,25 +3041,25 @@ int thermodynamics_reionization_get_tau(
 						integrating for optical depth between 0 and the just found
 						starting index */
 	class_call(array_spline_table_line_to_line(pth->tau_table,
-																						index_reio_start,
-																						pth->thermodynamics_table,
-																						pth->th_size,
-																						pth->index_th_dkappa,
-																						pth->index_th_dddkappa,
-																						_SPLINE_EST_DERIV_,
-																						pth->error_message),
-						pth->error_message,
-						pth->error_message);
-
+											index_reio_start,
+											pth->thermodynamics_table,
+											pth->th_size,
+											pth->index_th_dkappa,
+											pth->index_th_dddkappa,
+											_SPLINE_EST_DERIV_,
+											pth->error_message),
+					pth->error_message,
+					pth->error_message);
+	printf("index_reio_start is %d\n",index_reio_start);
 	/** - --> integrate for optical depth */
 	class_call(array_integrate_all_spline_table_line_to_line(pth->tau_table,
-																													index_reio_start,
-																													pth->thermodynamics_table,
-																													pth->th_size,
-																													pth->index_th_dkappa,
-																													pth->index_th_dddkappa,
-																													&(ptw->reionization_optical_depth),
-																													pth->error_message),
+														index_reio_start,
+														pth->thermodynamics_table,
+														pth->th_size,
+														pth->index_th_dkappa,
+														pth->index_th_dddkappa,
+														&(ptw->reionization_optical_depth),
+														pth->error_message),
 						pth->error_message,
 						pth->error_message);
 
@@ -4220,10 +4218,10 @@ int thermodynamics_ionization_fractions(
 							duz*=pth->xe_mode_amp;
 						}
 				} else {
-		    	if(pth->use_splines == _TRUE_){	
-		      	thermodynamics_spline_perturbation_at_z(pth, z, &duz);
-		    	} else {
-			  		thermodynamics_gaussian_perturbation_at_z(pth, z, &duz);
+		    		if(pth->use_splines == _TRUE_){	
+		      			thermodynamics_spline_perturbation_at_z(pth, z, &duz);
+		    		} else {
+			  			thermodynamics_gaussian_perturbation_at_z(pth, z, &duz);
 					}
 				}
 				
@@ -4248,9 +4246,9 @@ int thermodynamics_ionization_fractions(
 									pth->error_message);
 					//printf("%lf", duz);
 					thermodynamics_control_rescaling(pth, ptdw->x_fid, &duz);
-					ptdw->xe_pert = duz;
-					ptdw->x_reio = ptdw->x_fid+ptdw->xe_pert;
 				}
+				ptdw->xe_pert = duz;
+				ptdw->x_reio = ptdw->x_fid+ptdw->xe_pert;
 				break;	
 		}
 	} else {
