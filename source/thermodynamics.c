@@ -2300,7 +2300,6 @@ int thermodynamics_reionization_evolve_with_tau(struct thermodynamics_parameters
 
 	tau_sup=ptw->reionization_optical_depth;
 
-	printf("comparing tau_sup (%lf) to pth->tau_reio (%lf)\n", tau_sup, pth->tau_reio);
 	class_test(tau_sup < pth->tau_reio,
 						pth->error_message,
 						"parameters are such that reionization cannot start after z_start_max");
@@ -3050,7 +3049,6 @@ int thermodynamics_reionization_get_tau(struct precision * ppr,
 											pth->error_message),
 					pth->error_message,
 					pth->error_message);
-	printf("index_reio_start is %d\n",index_reio_start);
 	/** - --> integrate for optical depth */
 	class_call(array_integrate_all_spline_table_line_to_line(pth->tau_table,
 														index_reio_start,
