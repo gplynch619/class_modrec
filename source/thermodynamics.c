@@ -2731,10 +2731,17 @@ int thermodynamics_derivs(
 
 	else {
 		/* Full equations at later times */
-		dy[ptv->index_ti_D_Tmat] =
-			+ 2.*Tmat/(1.+z)                                                          /* Adiabatic expansion */
-			+ rate_gamma_b * (Tmat-Trad) / (Hz*(1.+z))                                /* Coupling to photons*/
-			- ptw->Tcmb;                                                              /* dTrad/dz */
+	
+	// Commented out bc of bug found by Sven	
+	//	dy[ptv->index_ti_D_Tmat] =
+	//		+ 2.*Tmat/(1.+z)                                                          /* Adiabatic expansion */
+	//		+ rate_gamma_b * (Tmat-Trad) / (Hz*(1.+z))                                /* Coupling to photons*/
+	//		- ptw->Tcmb;                                                              /* dTrad/dz */
+
+		dy[ptv->index_ti_D_Tmat] = +2.*Tmat/(1.+z) - ptw->Tcmb;
+		double factor = (y[ptv->index_ti_D_Tmat]) / (Hz*(1.+z));
+		double coupling_term = rate_gamma_b * factor;
+		dy[ptv->index_ti_D_Tmat] = dy[ptv->index_ti_D_Tmat] + coupling_term;
 
 		if (pth->has_exotic_injection == _TRUE_) {
 			dy[ptv->index_ti_D_Tmat] -= pin->pvecdeposition[pin->index_dep_heat] / heat_capacity / (Hz*(1.+z));  /* Heating from energy injection */
