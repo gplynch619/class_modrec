@@ -401,6 +401,12 @@ int thermodynamics_free(
 	free(pth->tau_table);
 	free(pth->thermodynamics_table);
 	free(pth->d2thermodynamics_dz2_table);
+	
+	if(pth->xe_pert_type == xe_pert_control || pth->xe_pert_type == xe_pert_basis){
+		free(pth->xe_mode_derivative);
+		free(pth->xe_pert_pivots);
+		free(pth->xe_pert_amps);
+	}
 
 	return _SUCCESS_;
 }
