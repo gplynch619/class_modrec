@@ -404,8 +404,8 @@ int thermodynamics_free(
 	
 	if(pth->xe_pert_type == xe_pert_control){
 		free(pth->xe_mode_derivative);
-		free(pth->xe_pert_pivots);
-		free(pth->xe_pert_amps);
+		free(pth->xe_control_points);
+		free(pth->xe_control_pivots);
 	}
 
 	return _SUCCESS_;
