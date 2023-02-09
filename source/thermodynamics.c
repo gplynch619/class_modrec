@@ -382,6 +382,8 @@ int thermodynamics_free_input( struct thermodynamics * pth) {
 
 	if(pth->xe_pert_type == xe_pert_control){
 		free(pth->xe_mode_derivative);
+		free(pth->xe_control_points);
+		free(pth->xe_control_pivots);
 	}
 
 	return _SUCCESS_;
