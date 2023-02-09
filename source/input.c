@@ -735,6 +735,7 @@ int input_shooting(struct file_content * pfc,
 		if (pba->shooting_failed == _TRUE_) {
 			background_free_input(pba);
 			perturbations_free_input(ppt);
+			thermodynamics_free_input(pth);
 		}
 
 		/* all parameters read in fzw must be considered as read in pfc. At the same
@@ -1171,6 +1172,7 @@ int input_get_guess(double *xguess,
 	/** - Deallocate everything allocated by input_read_parameters */
 	background_free_input(&ba);
 	perturbations_free_input(&pt);
+	thermodynamics_free_input(&th);
 
 	return _SUCCESS_;
 
@@ -1273,7 +1275,7 @@ int input_try_unknown_parameters(double * unknown_parameter,
 		if (input_verbose>2)
 			printf("Stage 1: background\n");
 		ba.background_verbose = 0;
-		class_call_except(background_init(&pr,&ba), ba.error_message, errmsg, background_free_input(&ba);perturbations_free_input(&pt););
+		class_call_except(background_init(&pr,&ba), ba.error_message, errmsg, background_free_input(&ba);perturbations_free_input(&pt);thermodynamics_free_input(&th););
 	}
 
 	if (pfzw->required_computation_stage >= cs_thermodynamics){
@@ -1284,14 +1286,14 @@ int input_try_unknown_parameters(double * unknown_parameter,
 		th.thermodynamics_verbose = 0;
 		th.hyrec_verbose = 0;
 	th.is_shooting = _FALSE_;
-		class_call_except(thermodynamics_init(&pr,&ba,&th), th.error_message, errmsg, background_free(&ba);perturbations_free_input(&pt););
+		class_call_except(thermodynamics_init(&pr,&ba,&th), th.error_message, errmsg, background_free(&ba);perturbations_free_input(&pt);thermodynamics_free_input(&th););
 	}
 
 	if (pfzw->required_computation_stage >= cs_perturbations){
 			if (input_verbose>2)
 				printf("Stage 3: perturbations\n");
 		pt.perturbations_verbose = 0;
-		class_call_except(perturbations_init(&pr,&ba,&th,&pt), pt.error_message, errmsg, thermodynamics_free(&th);background_free(&ba);perturbations_free_input(&pt););
+		class_call_except(perturbations_init(&pr,&ba,&th,&pt), pt.error_message, errmsg, thermodynamics_free(&th);background_free(&ba);perturbations_free_input(&pt);thermodynamics_free_input(&th););
 	}
 
 	if (pfzw->required_computation_stage >= cs_primordial){
@@ -1398,6 +1400,9 @@ int input_try_unknown_parameters(double * unknown_parameter,
 	}
 	if (pfzw->required_computation_stage < cs_background) {
 		background_free_input(&ba);
+	}
+	if (pfzw->required_computation_stage < cs_thermodynamics) {
+		thermodynamics_free_input(&th);
 	}
 	return _SUCCESS_;
 
@@ -2061,24 +2066,23 @@ int input_read_parameters_general(struct file_content * pfc,
 			break;
 
 		case xe_pert_basis:
-			
-	  	class_read_int("xe_pert_num", pth->xe_pert_num);
+			class_read_int("xe_pert_num", pth->xe_pert_num);
 
-	  	class_call(parser_read_double(pfc,"zmin_pert",&param1,&flag2,errmsg), errmsg, errmsg);
-	  	if (flag2 == _TRUE_){
-		  	pth->zmin_pert = param1; 
-	  	}
+	  		class_call(parser_read_double(pfc,"zmin_pert",&param1,&flag2,errmsg), errmsg, errmsg);
+	  		if (flag2 == _TRUE_){
+		  		pth->zmin_pert = param1; 
+	  		}
 	  
-	  	class_call(parser_read_double(pfc,"zmax_pert",&param1,&flag2,errmsg), errmsg, errmsg);
-	  	if (flag2 == _TRUE_){
-		  	pth->zmax_pert = param1; 
-	  	}
+	  		class_call(parser_read_double(pfc,"zmax_pert",&param1,&flag2,errmsg), errmsg, errmsg);
+	  		if (flag2 == _TRUE_){
+		  		pth->zmax_pert = param1; 
+	  		}
 
 			class_call(parser_read_string(pfc, "as_joint_mode",&string1,&flag2,errmsg), errmsg, errmsg);
 			
-	  	if(string_begins_with(string1,'y') || string_begins_with(string1, 'Y')){ pth->as_joint_mode= _TRUE_; }		
+	  		if(string_begins_with(string1,'y') || string_begins_with(string1, 'Y')){ pth->as_joint_mode= _TRUE_; }		
 
-	  	class_read_list_of_doubles("xe_pert_amps",pth->xe_pert_amps, pth->xe_pert_num);
+	  		class_read_list_of_doubles("xe_pert_amps",pth->xe_pert_amps, pth->xe_pert_num);
 		
 			if(pth->as_joint_mode){
 				class_read_double("xe_mode_amp", pth->xe_mode_amp);
@@ -2120,6 +2124,7 @@ int input_read_parameters_general(struct file_content * pfc,
 					pth->use_splines = _TRUE_;
 	  		}
 			}
+			
 			break;
 
 		case xe_pert_control:
