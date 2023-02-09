@@ -513,6 +513,7 @@ extern "C" {
                           struct background * pba,
                           struct thermodynamics * pth);
 
+  int thermodynamics_free_input(struct thermodynamics * pth );
   int thermodynamics_free(struct thermodynamics * pth);
 
   /* internal functions of the module */
