@@ -1810,7 +1810,6 @@ int array_interpolate_spline(
 
   inf=0;
   sup=n_lines-1;
-
   if (x_array[inf] < x_array[sup]){
 
     if (x < x_array[inf]) {
@@ -1841,7 +1840,15 @@ int array_interpolate_spline(
     }
 
     if (x > x_array[inf]) {
-      sprintf(errmsg,"%s(L:%d) : x=%e > x_max=%e",__func__,__LINE__,x,x_array[inf]);
+	  for(int i=0; i<n_lines;i++){
+	  	printf("%e,",x_array[i]);
+	  }
+	  printf("\n");
+	  for(int i=0; i<n_lines;i++){
+	  	printf("%e,",array[i]);
+	  }
+  	  sprintf(errmsg,"x_arr[inf]=%e, x_arr[sup]=%e",x_array[inf],x_array[sup-1]);
+      //sprintf(errmsg,"%s(L:%d) : x=%e > x_max=%e",__func__,__LINE__,x,x_array[inf]);
       return _FAILURE_;
     }
 

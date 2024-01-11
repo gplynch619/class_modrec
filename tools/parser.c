@@ -410,6 +410,7 @@ int parser_read_list_of_doubles(struct file_content * pfc,
   /* read one double between each comas */
   i = 0;
   string = pfc->value[index];
+
   do {
     i ++;
     substring = strchr(string,',');
