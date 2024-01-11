@@ -2054,6 +2054,8 @@ int input_read_parameters_general(struct file_content * pfc,
 			pth->xe_pert_type = xe_pert_basis;
 		} else if (strcmp(string1,"control") == 0){
 	  		pth->xe_pert_type = xe_pert_control;
+		} else if (strcmp(string1,"template") == 0){
+			pth->xe_pert_type = xe_pert_template;
 		} else {
 			class_stop(errmsg, "You specified 'xe_pert_type' as '%s'. It has to be one of {'xe_pert_none', 'xe_pert_basis', 'xe_pert_control'}.",string1);
 		}
@@ -2147,7 +2149,31 @@ int input_read_parameters_general(struct file_content * pfc,
 
 			class_call(parser_read_list_of_doubles(pfc, "xe_control_pivots", 
 									&entries_read, &(pth->xe_control_pivots), &flag2, errmsg),errmsg, errmsg);
-	  		break;	  
+	  		break;
+		
+		case xe_pert_template:
+			class_read_int("xe_pert_num", pth->xe_pert_num);
+
+			class_alloc(pth->xe_mode_derivative, pth->xe_pert_num*sizeof(double),errmsg);
+	  		
+			class_call(parser_read_double(pfc,"zmin_pert",&param1,&flag2,errmsg), errmsg, errmsg);
+	  		if (flag2 == _TRUE_){
+		  		pth->zmin_pert = param1; 
+	  		}
+	  
+	  		class_call(parser_read_double(pfc,"zmax_pert",&param1,&flag2,errmsg), errmsg, errmsg);
+	  		if (flag2 == _TRUE_){
+		  		pth->zmax_pert = param1; 
+	  		}
+			
+			class_call(parser_read_list_of_doubles(pfc, "xe_control_points", 
+									&entries_read, &(pth->xe_control_points), &flag2, errmsg),errmsg, errmsg);
+
+			class_call(parser_read_list_of_doubles(pfc, "xe_control_pivots", 
+									&entries_read, &(pth->xe_control_pivots), &flag2, errmsg),errmsg, errmsg);
+
+			class_read_double("xe_mode_amp", pth->xe_mode_amp);
+	  		break;	
 	}
 	
 		

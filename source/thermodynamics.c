@@ -4266,6 +4266,28 @@ int thermodynamics_ionization_fractions(
 				}
 				ptdw->xe_pert = duz;
 				ptdw->x_reio = ptdw->x_fid+ptdw->xe_pert;
+				break;
+			case xe_pert_template:
+				if( (z>pth->zmin_pert) && (z<pth->zmax_pert)){
+					int y_index = 1;
+					class_call(array_interpolate_spline(pth->xe_control_pivots,
+															pth->xe_pert_num,
+															pth->xe_control_points,
+															pth->xe_mode_derivative,
+															1,
+															z,
+															&y_index,
+															&duz,
+															1,
+															pth->error_message),
+									pth->error_message,
+									pth->error_message);
+					//printf("%lf", duz);
+					thermodynamics_control_rescaling(pth, ptdw->x_fid, &duz);
+					duz*=pth->xe_mode_amp;
+				}
+				ptdw->xe_pert = duz;
+				ptdw->x_reio = ptdw->x_fid+ptdw->xe_pert;
 				break;	
 		}
 	} else {

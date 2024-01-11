@@ -35,7 +35,8 @@ enum reionization_parametrization {
 enum xe_perturbation_type {
 	xe_pert_none,
 	xe_pert_basis,
-	xe_pert_control
+	xe_pert_control,
+  xe_pert_template
 };
 
 /**
