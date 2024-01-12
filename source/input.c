@@ -2171,7 +2171,6 @@ int input_read_parameters_general(struct file_content * pfc,
 
 			class_call(parser_read_list_of_doubles(pfc, "xe_control_pivots", 
 									&entries_read, &(pth->xe_control_pivots), &flag2, errmsg),errmsg, errmsg);
-
 			class_read_double("xe_mode_amp", pth->xe_mode_amp);
 	  		break;	
 	}
