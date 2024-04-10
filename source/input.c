@@ -2060,6 +2060,21 @@ int input_read_parameters_general(struct file_content * pfc,
 			class_stop(errmsg, "You specified 'xe_pert_type' as '%s'. It has to be one of {'xe_pert_none', 'xe_pert_basis', 'xe_pert_control'}.",string1);
 		}
 	}
+	
+	class_call(parser_read_string(pfc,"xe_interp_type",&string1,&flag1,errmsg),
+						errmsg,
+						errmsg);
+	/* Complete set of parameters */
+	if (flag1 == _TRUE_){
+		if (strcmp(string1,"linear") == 0){
+			pth->xe_interp_type = xe_linear;
+		} else if (strcmp(string1,"cubic") == 0){
+			pth->xe_interp_type = xe_cubic;
+		} else {
+			class_stop(errmsg, "You specified 'xe_interp_type' as '%s'. It has to be one of {'linear', 'cubic'}.",string1);
+		}
+	}
+
 
 	switch (pth->xe_pert_type) {
 		
@@ -5454,6 +5469,7 @@ int input_default_params(struct background *pba,
 
 	/** 7.b) xe file */
 	pth->xe_pert_type = xe_pert_none;
+	pth->xe_interp_type = xe_cubic;
 	pth->use_splines = _FALSE_;
 	pth->as_joint_mode = _FALSE_;
 	pth->xe_pert_amps = NULL;

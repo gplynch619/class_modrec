@@ -39,6 +39,11 @@ enum xe_perturbation_type {
   xe_pert_template
 };
 
+enum xe_interpolation_type {
+	xe_linear,
+	xe_cubic
+};
+
 /**
  * Is the input parameter the reionization redshift or optical depth?
  */
@@ -91,6 +96,7 @@ struct thermodynamics
 
   /* Parameters for X_e(z) perturbations */
   enum xe_perturbation_type xe_pert_type;
+  enum xe_interpolation_type xe_interp_type;
   
   short use_splines; //True or false depending on if we are perturbing
   short as_joint_mode; //True if the perturbation is to be treated as a joint mode and scaled

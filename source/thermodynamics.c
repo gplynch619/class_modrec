@@ -4265,7 +4265,8 @@ int thermodynamics_ionization_fractions(
 			case xe_pert_control:
 				if( (z>pth->zmin_pert) && (z<pth->zmax_pert)){
 					int y_index = 1;
-					class_call(array_interpolate_spline(pth->xe_control_pivots,
+					if(pth->xe_interp_type==xe_cubic){
+						class_call(array_interpolate_spline(pth->xe_control_pivots,
 															pth->xe_pert_num,
 															pth->xe_control_points,
 															pth->xe_mode_derivative,
@@ -4278,7 +4279,23 @@ int thermodynamics_ionization_fractions(
 									pth->error_message,
 									pth->error_message);
 					//printf("%lf", duz);
-					thermodynamics_control_rescaling(pth, ptdw->x_fid, &duz);
+						thermodynamics_control_rescaling(pth, ptdw->x_fid, &duz);
+				 	} else if (pth->xe_interp_type==xe_linear){
+						// HERE I AM 
+						class_call(array_interpolate_linear(pth->xe_control_pivots,
+															pth->xe_pert_num,
+															pth->xe_control_points,
+															1,
+															z,
+															&y_index,
+															&duz,
+															1,
+															pth->error_message),
+									pth->error_message,
+									pth->error_message);
+
+						}
+
 				}
 				ptdw->xe_pert = duz;
 				ptdw->x_reio = ptdw->x_fid+ptdw->xe_pert;
