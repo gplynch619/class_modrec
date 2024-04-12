@@ -11,7 +11,7 @@ import os.path as osp
 #  GCCPATH_STRING = sbp.Popen(
 #      ['gcc', '-print-libgcc-file-name'],
 #      stdout=sbp.PIPE).communicate()[0]
-gcc_path = '/usr/local/Cellar/gcc/12.2.0/bin/gcc-12'
+gcc_path = '/usr/local/Cellar/gcc/13.2.0/bin/gcc-13'
 
 GCCPATH_STRING = sbp.Popen(
     [gcc_path, '-print-libgcc-file-name'],

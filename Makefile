@@ -19,7 +19,7 @@ vpath .base build
 
 # your C compiler:
 #CC       = gcc
-CC        = /usr/local/Cellar/gcc/11.3.0_2/bin/gcc-11
+CC = /usr/local/Cellar/gcc/13.2.0/bin/gcc-13
 #CC       = icc
 #CC       = pgcc
 
@@ -32,7 +32,6 @@ AR        = ar rv
 # add a compilation option on the terminal command line:
 # "PYTHON=python3 make all" (Thanks to Marius Millea for python3 compatibility)
 PYTHON ?= python3
-PYTHON =/Users/gabe/opt/miniforge3/envs/classy/bin/python
 
 # your optimization flag
 OPTFLAG = -O3
