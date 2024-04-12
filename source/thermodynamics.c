@@ -429,21 +429,6 @@ int thermodynamics_init(
 	return _SUCCESS_;
 }
 
-int thermodynamics_free_input( struct thermodynamics * pth) {
-
-	if(pth->xe_pert_type == xe_pert_control){
-		free(pth->xe_mode_derivative);
-		free(pth->xe_control_points);
-		free(pth->xe_control_pivots);
-	} else if (pth->xe_pert_type == xe_pert_template){
-		free(pth->xe_mode_derivative);
-		free(pth->xe_control_points);
-		free(pth->xe_control_pivots);
-	}
-
-	return _SUCCESS_;
-}
-
 /**
 * Free all memory space allocated by thermodynamics_init.
 *
@@ -511,6 +496,16 @@ int thermodynamics_free_input(
     free(pth->reio_inter_xe);
     break;
 
+  }
+
+  if(pth->xe_pert_type == xe_pert_control){
+		free(pth->xe_mode_derivative);
+		free(pth->xe_control_points);
+		free(pth->xe_control_pivots);
+  } else if (pth->xe_pert_type == xe_pert_template){
+		free(pth->xe_mode_derivative);
+		free(pth->xe_control_points);
+		free(pth->xe_control_pivots);
   }
 
   return _SUCCESS_;
