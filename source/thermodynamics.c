@@ -1071,16 +1071,16 @@ int thermodynamics_workspace_init(
 						pth->error_message);
 		}
 	} else if (pth->xe_pert_type==xe_pert_control){
-		class_call(array_spline_table_lines(pth->xe_control_pivots,
-																	pth->xe_pert_num,
-																	pth->xe_control_points,
-																	1,
-																	pth->xe_mode_derivative,
-																	_SPLINE_EST_DERIV_,
-																	pth->error_message),
-						pth->error_message,
-						pth->error_message);
-
+      class_call(array_spline_table_lines(pth->xe_control_pivots,
+                                    pth->xe_pert_num,
+                                    pth->xe_control_points,
+                                    1,
+                                    pth->xe_mode_derivative,
+                                    _SPLINE_EST_DERIV_,
+                                    pth->error_message),
+              pth->error_message,
+              pth->error_message);
+      
 	} else if (pth->xe_pert_type==xe_pert_template){
 		class_call(array_spline_table_lines(pth->xe_control_pivots,
 																	pth->xe_pert_num,

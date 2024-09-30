@@ -8,14 +8,14 @@ import subprocess as sbp
 import os.path as osp
 
 # Recover the gcc compiler
-#  GCCPATH_STRING = sbp.Popen(
-#      ['gcc', '-print-libgcc-file-name'],
-#      stdout=sbp.PIPE).communicate()[0]
-gcc_path = '/usr/local/Cellar/gcc/13.2.0/bin/gcc-13'
-
 GCCPATH_STRING = sbp.Popen(
-    [gcc_path, '-print-libgcc-file-name'],
-    stdout=sbp.PIPE).communicate()[0]
+          ['gcc', '-print-libgcc-file-name'],
+          stdout=sbp.PIPE).communicate()[0]
+#gcc_path = '/usr/local/Cellar/gcc/13.2.0/bin/gcc-13'
+
+#GCCPATH_STRING = sbp.Popen(
+#    [gcc_path, '-print-libgcc-file-name'],
+#    stdout=sbp.PIPE).communicate()[0]
 #GCCPATH_STRING = "/opt/homebrew/Cellar/gcc/11.2.0_3/lib/gcc/11/gcc/aarch64-apple-darwin21/11"
 print(GCCPATH_STRING)
 GCCPATH = osp.normpath(osp.dirname(GCCPATH_STRING)).decode()
@@ -25,7 +25,7 @@ liblist = ["class"]
 #      ['gcc', '-lmvec'],
 #      stderr=sbp.PIPE).communicate()[1]
 MVEC_STRING = sbp.Popen(
-    [gcc_path, '-lmvec'],
+    ['gcc', '-lmvec'],
     stderr=sbp.PIPE).communicate()[1]
 
 if b"mvec" not in MVEC_STRING:

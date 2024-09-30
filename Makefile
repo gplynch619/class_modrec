@@ -20,7 +20,7 @@ vpath .base build
 
 # your C compiler:
 #CC       = gcc
-CC = /usr/local/Cellar/gcc/13.2.0/bin/gcc-13
+CC       = /usr/local/Cellar/gcc/14.1.0_2/bin/gcc
 #CC       = icc
 #CC       = pgcc
 CPP      = g++ --std=c++11 -fpermissive -Wno-write-strings

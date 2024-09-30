@@ -119,6 +119,10 @@ struct thermodynamics
   double zmin_pert; /**< z_min for xe perturbations */
   double zmax_pert; /**< z_max for xe perturbations */
   
+  /* short expit_already_applied; /** True if the input control points have already has expit 
+                                  transformation applied (i.e. is "qi" as opposed to qti). 
+                                  Only relevant for cubic interpolation scheme. True for backwards compatibility.  **/
+
   /** parameters for interacting dark matter */
 
   short has_idm_b;    /**< Do we have idm with baryons? */
