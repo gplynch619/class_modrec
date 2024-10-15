@@ -87,6 +87,7 @@ struct thermodynamics
   enum reionization_z_or_tau reio_z_or_tau; /**< is the input parameter the reionization redshift or optical depth? */
 
   double tau_reio; /**< if above set to tau, input value of reionization optical depth */
+  double tau_excess; /**< if above set to tau, input value of reionization optical depth */
 
   double z_reio;   /**< if above set to z,   input value of reionization redshift */
 
@@ -182,6 +183,8 @@ struct thermodynamics
 
   double annihilation; /**< parameter describing CDM annihilation (f <sigma*v> / m_cdm, see e.g. 0905.0003) */
 
+  double * baseline_xe;
+
   short has_on_the_spot; /**< flag to specify if we want to use the on-the-spot approximation **/
 
   double decay; /**< parameter describing CDM decay (f/tau, see e.g. 1109.6322)*/
@@ -225,11 +228,17 @@ struct thermodynamics
   int index_th_xe;            /**< total ionization fraction \f$ x_e \f$ */
   int index_th_xe_fid;        /**< fiducial (no perturbation) ionization fraction \f$ x_e \f$ */
   int index_th_xe_pert;       /**< fiducial (no perturbation) ionization fraction \f$ x_e \f$ */
+  
+  int index_th_xe_rec;       /**< ionization fraction due only to recombination \f$ x_e \f$ (only computed when exotic injection)*/
+
   int index_th_dkappa;        /**< Thomson scattering rate \f$ d \kappa / d \tau\f$ (units 1/Mpc) */
   int index_th_tau_d;         /**< Baryon drag optical depth */
   int index_th_ddkappa;       /**< scattering rate derivative \f$ d^2 \kappa / d \tau^2 \f$ */
   int index_th_dddkappa;      /**< scattering rate second derivative \f$ d^3 \kappa / d \tau^3 \f$ */
   int index_th_exp_m_kappa;   /**< \f$ exp^{-\kappa} \f$ */
+  int index_th_dkappa_ex;     /** Thomson scattering rate \f$ d \kappa / d \ tau \f$ (units 1/Mpc) due only to electrons from reionization or exotic injections.  */
+  int index_th_ddkappa_ex;    /** Derivative of the above  */
+  int index_th_dddkappa_ex;   /** Derivative of the above  */
   int index_th_g;             /**< visibility function \f$ g = (d \kappa / d \tau) * exp^{-\kappa} \f$ */
   int index_th_dg;            /**< visibility function derivative \f$ (d g / d \tau) \f$ */
   int index_th_ddg;           /**< visibility function second derivative \f$ (d^2 g / d \tau^2) \f$ */
@@ -518,7 +527,7 @@ struct thermo_workspace {
   double z_ap_idmtca;          /**< redshift at which we start idm tight-coupling approximation */
 
   double reionization_optical_depth; /**< reionization optical depth inferred from reionization history */
-
+  double excess_optical_depth;
   int last_index_back; /**< nearest location in background table */
 
   struct thermo_diffeq_workspace * ptdw;        /**< pointer to workspace for differential equations */
@@ -651,6 +660,10 @@ extern "C" {
                                           struct background * pba,
                                           struct thermodynamics * pth,
                                           struct thermo_workspace * ptw);
+
+  int thermodynamics_get_tau_excess(
+										struct thermodynamics * pth,
+										struct thermo_workspace * ptw);
 
   int thermodynamics_vector_free(struct thermo_vector * tv);
 

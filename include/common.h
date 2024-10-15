@@ -93,6 +93,8 @@ extern "C" {
     int file_exists(const char *fname);
     int compare_doubles(const void * a,
                         const void * b);
+    int compare_ints(const void * a,
+                        const void * b);
     int string_begins_with(char* thestring, char beginchar);
 #ifdef __cplusplus
 }

@@ -429,6 +429,13 @@ int input_read_from_file(struct file_content * pfc,
                errmsg);
   }
 
+  if(pth->has_exotic_injection == _TRUE_){
+       if (input_verbose > 0) {
+      printf(" -> has_exotic_injection is TRUE,\n");
+      }
+      class_call(input_exotic_baseline_xe(pfc,pth,errmsg), errmsg, errmsg);
+  }
+
 	/** Write info on the read/unread parameters. This is the correct place to do it,
 			since we want it to happen after all the shooting business,
 			and after the final reading of all parameters */
@@ -454,6 +461,488 @@ int input_read_from_file(struct file_content * pfc,
 
 }
 
+int input_exotic_baseline_xe(struct file_content * pfc,
+                   struct thermodynamics * pth,
+                   ErrorMsg errmsg){
+
+	int i;
+  
+  	/* We need to remember that we shot so we can clean up properly */
+  	struct exotic_baseline_xe_workspace ebxw;
+
+
+	// first, count number of exotic injection params, then write them down so we know where they are
+	int exotic_param_count = 0;
+	
+  	for(i=0; i<pfc->size; i++){
+		char start[4];
+		strncpy(start, pfc->name[i], 3);
+		start[3]='\0';
+		if(strcmp(start,"DM_") == 0){
+			exotic_param_count++;
+		}
+		if(strcmp(start,"PBH") == 0){
+			printf("comparison worked!\n");
+			exotic_param_count++;
+		}
+		if(strcmp(start,"f_e") == 0){
+			exotic_param_count++;
+		}
+		if(strcmp(start,"chi") == 0){
+			exotic_param_count++;
+		} // all exotic params, and only them, begin with one of the four above strings
+  	}
+
+	int * exotic_param_indices;
+
+	class_alloc(exotic_param_indices,
+				exotic_param_count*sizeof(int),
+				errmsg);
+
+	int j = 0;
+  	for(i=0; i<pfc->size; i++){
+		char start[4];
+		strncpy(start, pfc->name[i], 3);
+		start[3]='\0';
+		if(strcmp(start,"DM_") == 0){
+			exotic_param_indices[j] = i;
+			j++;
+		}
+		if(strcmp(start,"PBH") == 0){
+			exotic_param_indices[j] = i;
+			j++;
+		}
+		if(strcmp(start,"f_e") == 0){
+			exotic_param_indices[j] = i;
+			j++;
+		}
+		if(strcmp(start,"chi") == 0){
+			exotic_param_indices[j] = i;
+			j++;
+		}
+	}
+
+	short has_reio_parametrization = _FALSE_;
+	int reio_parametrization_index;
+
+	for(i=0; i<pfc->size; i++){
+		if(strcmp(pfc->name[i],"reio_parametrization") == 0){
+			has_reio_parametrization = _TRUE_;
+			reio_parametrization_index = i;
+		}
+	}
+
+	int reio_param_count = 0;	
+	int * reio_param_indices;
+	if(has_reio_parametrization){
+
+		switch (pth->reio_parametrization) {
+		
+		case reio_none:
+		/* nothing to be read*/
+			break;
+
+	/** 8.a) Reionization parameters if reio_parametrization=reio_camb */
+		case reio_camb:
+		case reio_half_tanh:
+		/* Read */
+		  	for(i=0; i<pfc->size; i++){
+				if(strcmp(pfc->name[i],"z_reio") == 0){
+					reio_param_count++;
+				}
+
+				if(strcmp(pfc->name[i],"tau_reio") == 0){
+					reio_param_count++;
+				}
+
+				if(strcmp(pfc->name[i],"reionization_exponent") == 0){
+					reio_param_count++;
+				}
+
+				if(strcmp(pfc->name[i],"reionization_width") == 0){
+					reio_param_count++;
+				}
+
+				if(strcmp(pfc->name[i],"helium_fullreio_redshift") == 0){
+					reio_param_count++;
+				}
+
+				if(strcmp(pfc->name[i],"helium_fullreio_width") == 0){
+					reio_param_count++;
+				}
+			}
+
+			class_alloc(reio_param_indices,
+				reio_param_count*sizeof(int),
+				errmsg);
+			
+			j=0;
+		  	for(i=0; i<pfc->size; i++){
+				if(strcmp(pfc->name[i],"z_reio") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+
+				if(strcmp(pfc->name[i],"tau_reio") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+
+				if(strcmp(pfc->name[i],"reionization_exponent") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+
+				if(strcmp(pfc->name[i],"reionization_width") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+
+				if(strcmp(pfc->name[i],"helium_fullreio_redshift") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+
+				if(strcmp(pfc->name[i],"helium_fullreio_width") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+			}
+
+			break;
+
+		/** 8.b) Reionization parameters if reio_parametrization=reio_bins_tanh */
+		case reio_bins_tanh:
+			/* Read */
+
+			for(i=0; i<pfc->size; i++){
+
+				if(strcmp(pfc->name[i],"binned_reio_num") == 0){
+					reio_param_count++;
+				}
+
+				if(strcmp(pfc->name[i],"binned_reio_z") == 0){
+					reio_param_count++;
+				}
+				
+				if(strcmp(pfc->name[i],"binned_reio_xe") == 0){
+					reio_param_count++;
+				}
+
+				if(strcmp(pfc->name[i],"binned_reio_step_sharpness") == 0){
+					reio_param_count++;
+				}		
+			}
+
+			class_alloc(reio_param_indices,
+				reio_param_count*sizeof(int),
+				errmsg);
+			
+			j=0;
+			for(i=0; i<pfc->size; i++){
+
+				if(strcmp(pfc->name[i],"binned_reio_num") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+
+				if(strcmp(pfc->name[i],"binned_reio_z") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+				
+				if(strcmp(pfc->name[i],"binned_reio_xe") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+
+				if(strcmp(pfc->name[i],"binned_reio_step_sharpness") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}		
+			}
+			break;
+
+		/** 8.c) reionization parameters if reio_parametrization=reio_many_tanh */
+		case reio_many_tanh:
+			/* Read */
+			for(i=0; i<pfc->size; i++){
+
+				if(strcmp(pfc->name[i],"many_tanh_num") == 0){
+					reio_param_count++;
+				}
+
+				if(strcmp(pfc->name[i],"many_tanh_z") == 0){
+					reio_param_count++;
+				}
+				
+				if(strcmp(pfc->name[i],"many_tanh_xe") == 0){
+					reio_param_count++;
+				}
+
+				if(strcmp(pfc->name[i],"many_tanh_width") == 0){
+					reio_param_count++;
+				}		
+			}
+
+			class_alloc(reio_param_indices,
+				reio_param_count*sizeof(int),
+				errmsg);
+			
+			j=0;
+
+			for(i=0; i<pfc->size; i++){
+
+				if(strcmp(pfc->name[i],"many_tanh_num") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+
+				if(strcmp(pfc->name[i],"many_tanh_z") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+				
+				if(strcmp(pfc->name[i],"many_tanh_xe") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+
+				if(strcmp(pfc->name[i],"many_tanh_width") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}		
+			}
+			break;
+
+		/** 8.d) reionization parameters if reio_parametrization=reio_many_tanh */
+		case reio_inter:
+			/* Read */
+
+			for(i=0; i<pfc->size; i++){
+
+				if(strcmp(pfc->name[i],"reio_inter_num") == 0){
+					reio_param_count++;
+				}
+
+				if(strcmp(pfc->name[i],"reio_inter_z") == 0){
+					reio_param_count++;
+				}
+				
+				if(strcmp(pfc->name[i],"reio_inter_xe") == 0){
+					reio_param_count++;
+				}	
+			}
+
+			class_alloc(reio_param_indices,
+				reio_param_count*sizeof(int),
+				errmsg);
+			
+			j=0;
+
+			for(i=0; i<pfc->size; i++){
+
+				if(strcmp(pfc->name[i],"reio_inter_num") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+
+				if(strcmp(pfc->name[i],"reio_inter_z") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}
+				
+				if(strcmp(pfc->name[i],"reio_inter_xe") == 0){
+					reio_param_indices[j]=i;
+					j++;
+				}	
+			}
+		
+			break;
+		}
+	}
+
+	/* At this point, we should know how many input parameters we are skipping, and where they are*/
+
+	int num_skip_indices=0; /* number of indices to skip when initializing the new file content*/
+
+	num_skip_indices += exotic_param_count;
+
+	if(has_reio_parametrization){
+		if (pth->reio_parametrization!=reio_none){ /*have to account for the case where we have explicitly set reio_parameterization = reio_none, so reio_param_indices is unallocated and we have no parameters to skip*/
+			num_skip_indices+=reio_param_count;
+		}
+	}
+
+	int * total_skip_indices;
+	class_alloc(total_skip_indices,
+				num_skip_indices*sizeof(int),
+				errmsg);
+	j=0;
+	for(i=0; i<exotic_param_count; i++){
+		total_skip_indices[j] = exotic_param_indices[i];
+		j++; 
+	}
+
+	if(has_reio_parametrization){
+		if(reio_param_count>0){
+			for(i=0; i<reio_param_count; i++){
+				total_skip_indices[j] = reio_param_indices[i];
+			}
+		}
+	}
+
+	free(exotic_param_indices);
+	if(has_reio_parametrization){
+		free(reio_param_indices);
+	}
+
+
+	qsort(total_skip_indices, num_skip_indices, sizeof(int), compare_ints);
+
+
+	/* we now have a sorted array of all the indices from the original fc we want to skip copying over to the new fc*/
+
+	// for(j=0; j<num_skip_indices; j++){
+	// 	fprintf(stdout, "total_skip_indices[%d] = %d\n", j, total_skip_indices[j]);
+	// }
+
+  	class_call(parser_init(&(ebxw.fc),
+                          pfc->size-num_skip_indices+(!has_reio_parametrization), // we will reuse the reio_parametrization if we found it. If not, we need to allocate an extra spot for that.
+                          pfc->filename,
+                          errmsg),
+              errmsg,errmsg); // this allocates the arrays in tmw.fc but does not fill them
+
+	j=0;
+	int next_skip_ind = total_skip_indices[j];
+	int k=0;
+	for(i=0; i<pfc->size; i++){
+		if(i==next_skip_ind){
+			next_skip_ind = total_skip_indices[++j];
+			continue;
+		} else {
+			memcpy(ebxw.fc.name+k, pfc->name+i, sizeof(FileArg));
+			memcpy(ebxw.fc.value+k, pfc->value+i, sizeof(FileArg));
+			memcpy(ebxw.fc.read+k, pfc->read+i, sizeof(short));
+			k++;
+		}
+	}
+
+	if(has_reio_parametrization){
+		class_sprintf(ebxw.fc.value[reio_parametrization_index], "%s", "reio_none");
+	} else {
+		strcpy(ebxw.fc.name[k], "reio_parametrization"); 
+		strcpy(ebxw.fc.value[k],"reio_none");
+	}
+
+	/* the workspace is now set up to do the needful, we can free arrays*/
+
+	free(total_skip_indices);
+	int arr_size;
+	input_compute_exotic_baseline_xe(&(ebxw), &arr_size, errmsg);
+	fprintf(stdout, "sizeof(&ebxw->baseline_xe) = %i\n", arr_size);
+
+	class_alloc(pth->baseline_xe,
+				arr_size*sizeof(double),
+				errmsg);
+
+	memcpy(pth->baseline_xe, ebxw.baseline_xe, arr_size*sizeof(double));
+
+	parser_free(&(ebxw.fc));
+
+	free(ebxw.baseline_xe);
+
+	return _SUCCESS_;
+
+}
+
+
+int input_compute_exotic_baseline_xe(struct exotic_baseline_xe_workspace * pebxw,
+								int * size_of_array, /*output for size of allocated array*/
+                                ErrorMsg errmsg){
+
+  struct precision pr;        /* for precision parameters */
+  struct background ba;       /* for cosmological background */
+  struct thermodynamics th;           /* for thermodynamics */
+  struct perturbations pt;         /* for source functions */
+  struct transfer tr;        /* for transfer functions */
+  struct primordial pm;       /* for primordial spectra */
+  struct harmonic hr;          /* for output spectra */
+  struct fourier fo;        /* for non-linear spectra */
+  struct lensing le;          /* for lensed spectra */
+  struct distortions sd;      /* for spectral distortions */
+  struct output op;           /* for output files */
+
+  int input_verbose;
+  int flag;
+  int param;
+  
+  class_call(input_read_precisions(&(pebxw->fc),&pr,&ba,&th,&pt,&tr,&pm,&hr,&fo,&le,&sd,&op,
+                                   errmsg),
+             errmsg,
+             errmsg);
+
+
+  class_call(input_read_parameters(&(pebxw->fc),&pr,&ba,&th,&pt,&tr,&pm,&hr,&fo,&le,&sd,&op,
+                                   errmsg),
+             errmsg,
+             errmsg);
+
+  class_call(parser_read_int(&(pebxw->fc),"input_verbose",&param,&flag,errmsg),
+             errmsg,
+             errmsg);
+
+
+  if (flag == _TRUE_)
+    input_verbose = param;
+  else
+    input_verbose = 0;
+
+
+  //optimize flags here for Cl_pp computation
+
+    if (input_verbose>2){
+      printf("Stage 1: background\n");
+	}
+    ba.background_verbose = 0;
+    class_call_except(background_init(&pr,&ba), ba.error_message, errmsg, background_free_input(&ba);thermodynamics_free_input(&th);perturbations_free_input(&pt););
+    // fprintf(stdout,"m_ncdm_in_eV: %f \n", ba.m_ncdm_in_eV);
+    // fprintf(stdout,"T_ncdm: %f \n", ba.T_ncdm);
+  
+
+    if (input_verbose>2){
+      printf("Stage 2: thermodynamics\n");
+	}
+    class_call_except(thermodynamics_init(&pr,&ba,&th), th.error_message, errmsg, background_free(&ba);thermodynamics_free_input(&th);perturbations_free_input(&pt););
+
+	class_alloc(pebxw->baseline_xe,
+				((&th)->tt_size)*sizeof(double),
+				errmsg);
+	
+	for (int index_z=0; index_z<(&th)->tt_size; index_z++) {
+			pebxw->baseline_xe[index_z] =  (&th)->thermodynamics_table[index_z*(&th)->th_size+(&th)->index_th_xe];
+	}
+
+	*size_of_array = (&th)->tt_size;
+
+	class_call(thermodynamics_free(&th), th.error_message, errmsg);
+
+	class_call(background_free(&ba), ba.error_message, errmsg);
+
+	/** Set filecontent to unread */
+	for (int i=0; i<(pebxw->fc).size; i++) {
+		pebxw->fc.read[i] = _FALSE_;
+	}
+	/** Free pointers allocated on input if neccessary */
+	/** Some pointers in ppt may not be allocated if has_perturbations is _FALSE_, but this is handled in perturbations_free_input as neccessary. */
+	perturbations_free_input(&pt);
+
+	thermodynamics_free_input(&th);
+
+	printf(" -> baseline calculated!,\n");
+	return _SUCCESS_;
+
+}
 
 /**
 * In CLASS, we call 'shooting' the process of doing preliminary runs

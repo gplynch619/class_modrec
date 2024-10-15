@@ -222,6 +222,11 @@ struct fzerofun_workspace {
   enum computation_stage required_computation_stage;
 };
 
+struct exotic_baseline_xe_workspace {
+  struct file_content fc;
+  double * baseline_xe;
+};
+
 /**************************************************************/
 /* @cond INCLUDE_WITH_DOXYGEN */
 /*
@@ -275,6 +280,14 @@ extern "C" {
                            ErrorMsg errmsg);
 
   /* Functions related to shooting */
+
+  int input_exotic_baseline_xe(struct file_content * pfc,
+                       struct thermodynamics * pth,
+                       ErrorMsg errmsg);
+
+  int input_compute_exotic_baseline_xe(struct exotic_baseline_xe_workspace * pebxw,
+                       int * size_of_array,
+                       ErrorMsg errmsg);
 
   int input_shooting(struct file_content * pfc,
                      struct precision * ppr,

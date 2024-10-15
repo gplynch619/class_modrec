@@ -111,6 +111,7 @@ cdef extern from "class.h":
         int index_th_xe
         int index_th_Tb
         double tau_reio
+        double tau_excess
         double z_reio
         double z_rec
         double tau_rec

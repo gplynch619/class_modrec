@@ -82,7 +82,9 @@ int thermodynamics_at_z(
 		/* ionization fraction assumed to remain constant at large z */
 		x0= pth->thermodynamics_table[(pth->tt_size-1)*pth->th_size+pth->index_th_xe];
 		pvecthermo[pth->index_th_xe] = x0;
-
+		if(pth->has_exotic_injection){
+			pvecthermo[pth->index_th_xe_rec] = x0;
+		}
 		/* In the case of varying fundamental constants, compute correction factor (according to 1705.03925) */
 		if (pth->has_varconst == _TRUE_) {
 			class_call(background_varconst_of_z(pba, z, &alpha, &me),
@@ -93,6 +95,10 @@ int thermodynamics_at_z(
 
 		/* Calculate dkappa/dtau (dkappa/dtau = a n_e x_e sigma_T = a^{-2} n_e(today) x_e sigma_T in units of 1/Mpc) */
 		pvecthermo[pth->index_th_dkappa] = (1.+z) * (1.+z) * pth->n_e * x0 * sigmaTrescale * _sigma_ * _Mpc_over_m_;
+
+		if(pth->has_exotic_injection){
+			pvecthermo[pth->index_th_dkappa_ex] = (1.+z) * (1.+z) * pth->n_e * (x0-x0) * sigmaTrescale * _sigma_ * _Mpc_over_m_;
+		}
 
 		/* tau_d scales like (1+z)**2 */
 		pvecthermo[pth->index_th_tau_d] = pth->thermodynamics_table[(pth->tt_size-1)*pth->th_size+pth->index_th_tau_d]*pow((1+z)/(1.+pth->z_table[pth->tt_size-1]),2);
@@ -105,6 +111,10 @@ int thermodynamics_at_z(
 
 		/* Calculate d2kappa/dtau2 = dz/dtau d/dz[dkappa/dtau] given that [dkappa/dtau] proportional to (1+z)^2 and dz/dtau = -H */
 		pvecthermo[pth->index_th_ddkappa] = -pvecback[pba->index_bg_H] * 2. / (1.+z) * pvecthermo[pth->index_th_dkappa];
+		if(pth->has_exotic_injection){
+			pvecthermo[pth->index_th_ddkappa_ex] = -pvecback[pba->index_bg_H] * 2. / (1.+z) * pvecthermo[pth->index_th_dkappa_ex];
+
+		}
 
 		/* Calculate d3kappa/dtau3 given that [dkappa/dtau] proportional to (1+z)^2 */
 		pvecthermo[pth->index_th_dddkappa] = (pvecback[pba->index_bg_H]*pvecback[pba->index_bg_H]/ (1.+z) - pvecback[pba->index_bg_H_prime]) * 2. / (1.+z) * pvecthermo[pth->index_th_dkappa];
@@ -399,6 +409,14 @@ int thermodynamics_init(
 																												ptw->ptrp),
 						pth->error_message,
 						pth->error_message);
+
+	if (pth->has_exotic_injection == _TRUE_) {
+
+		for (int indx=0; indx<pth->tt_size-1; indx++) {
+			pth->thermodynamics_table[indx*pth->th_size+pth->index_th_xe_rec] = pth->baseline_xe[indx];
+		}
+		free(pth->baseline_xe);
+	}
 
 	/** - solve recombination and reionization and store values of \f$ z, x_e, d \kappa / d \tau, T_b, c_b^2 \f$  */
 	class_call(thermodynamics_solve(ppr,pba,pth,ptw,pvecback),
@@ -1138,11 +1156,21 @@ int thermodynamics_indices(
 	class_define_index(pth->index_th_xe,_TRUE_,index_th,1);
 	class_define_index(pth->index_th_xe_fid,_TRUE_,index_th,1);
 	class_define_index(pth->index_th_xe_pert,_TRUE_,index_th,1);
+	if(pth->has_exotic_injection){
+		class_define_index(pth->index_th_xe_rec,_TRUE_,index_th,1);
+	}
 	/* Optical depth and related quantities */
 	class_define_index(pth->index_th_dkappa,_TRUE_,index_th,1);
 	class_define_index(pth->index_th_ddkappa,_TRUE_,index_th,1);
 	class_define_index(pth->index_th_dddkappa,_TRUE_,index_th,1);
 	class_define_index(pth->index_th_exp_m_kappa,_TRUE_,index_th,1);
+	/* "Excess" optical depth quantities, defined as the optical depth in excess of what would be present due to the residual x_e from recombination alone*/
+	if(pth->has_exotic_injection){
+		class_define_index(pth->index_th_dkappa_ex,_TRUE_,index_th,1);
+		class_define_index(pth->index_th_ddkappa_ex,_TRUE_,index_th,1);
+		class_define_index(pth->index_th_dddkappa_ex,_TRUE_,index_th,1);
+
+	}
 	/* Visibility function + derivatives */
 	class_define_index(pth->index_th_g,_TRUE_,index_th,1);
 	class_define_index(pth->index_th_dg,_TRUE_,index_th,1);
@@ -1872,7 +1900,13 @@ int thermodynamics_solve(
 							pth->error_message);
 
 		pth->tau_reio=ptw->reionization_optical_depth;
-
+		if(pth->has_exotic_injection){
+			class_call(thermodynamics_get_tau_excess(pth,
+													ptw),
+					pth->error_message,
+					pth->error_message);
+			pth->tau_excess = ptw->excess_optical_depth;
+		}
 	}
 
 	/** - free quantities allocated at the beginning of the routine */
@@ -2030,6 +2064,10 @@ int thermodynamics_output_summary(
 		class_stop(pth->error_message,
 							"value of reio_parametrization=%d unclear",pth->reio_parametrization);
 		break;
+	}
+
+	if(pth->has_exotic_injection){
+		printf(" -> optical depth in excess of recomb. residual = %f\n",pth->tau_excess);
 	}
 
   if (pth->thermodynamics_verbose > 1)
@@ -3176,6 +3214,10 @@ int thermodynamics_sources(
 	pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_xe_fid] = xfid;
 	pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_xe_pert] = xpert;
 
+	double x_rec;
+	if(pth->has_exotic_injection){
+		x_rec = pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_xe_rec];
+	}
 	/* Tb */
 	pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_Tb] = Tmat;
 
@@ -3193,6 +3235,10 @@ int thermodynamics_sources(
 	/* dkappa/dtau = a n_e x_e sigma_T = a^{-2} n_e(today) x_e sigma_T (in units of 1/Mpc) */
 	pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_dkappa]
 		= (1.+z) * (1.+z) * ptw->SIunit_nH0 * x * sigmaTrescale * _sigma_ * _Mpc_over_m_;
+
+	if(pth->has_exotic_injection){
+		pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_dkappa_ex] = (1.+z) * (1.+z) * ptw->SIunit_nH0 * (x-x_rec) * sigmaTrescale * _sigma_ * _Mpc_over_m_;
+	}
 
   if (pba->has_idm == _TRUE_) {
     pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size + pth->index_th_T_idm] = ptdw->T_idm;
@@ -3313,6 +3359,74 @@ int thermodynamics_reionization_get_tau(struct precision * ppr,
 	return _SUCCESS_;
 }
 
+int thermodynamics_get_tau_excess(struct thermodynamics * pth,
+										struct thermo_workspace * ptw) {
+
+	/** Define local quantities */
+	/* Visibility function value */
+	/* kappa derivative values*/
+
+	int index_reio_start, index_z;
+
+  /** - --> second derivative with respect to tau of dkappa (in view of of spline interpolation) */
+  class_call(array_spline_table_line_to_line(pth->tau_table,
+                                             pth->tt_size,
+                                             pth->thermodynamics_table,
+                                             pth->th_size,
+                                             pth->index_th_dkappa_ex,
+                                             pth->index_th_dddkappa_ex,
+                                             _SPLINE_EST_DERIV_,
+                                             pth->error_message),
+             pth->error_message,
+             pth->error_message);
+
+	/** - --> first derivative with respect to tau of dkappa (using spline interpolation) */
+	class_call(array_derive_spline_table_line_to_line(pth->tau_table,
+																										pth->tt_size,
+																										pth->thermodynamics_table,
+																										pth->th_size,
+																										pth->index_th_dkappa_ex,
+																										pth->index_th_dddkappa_ex,
+																										pth->index_th_ddkappa_ex,
+																										pth->error_message),
+						pth->error_message,
+						pth->error_message);
+
+	for (index_z=0; index_z<pth->tt_size-1; index_z++) {
+		if (pth->z_table[index_z] > 4000) {
+			index_reio_start = index_z;
+		}
+	}
+
+
+  class_call(array_spline_table_line_to_line(pth->tau_table,
+                                             index_reio_start,
+                                             pth->thermodynamics_table,
+                                             pth->th_size,
+                                             pth->index_th_dkappa_ex,
+                                             pth->index_th_dddkappa_ex,
+                                             _SPLINE_EST_DERIV_,
+                                             pth->error_message),
+             pth->error_message,
+             pth->error_message);
+
+  /** - --> integrate for optical depth */
+  class_call(array_integrate_all_spline_table_line_to_line(pth->tau_table,
+                                                           index_reio_start,
+                                                           pth->thermodynamics_table,
+                                                           pth->th_size,
+                                                           pth->index_th_dkappa_ex,
+                                                           pth->index_th_dddkappa_ex,
+                                                           &(ptw->excess_optical_depth),
+                                                           pth->error_message),
+             pth->error_message,
+             pth->error_message);
+
+	ptw->excess_optical_depth *= -1; // tau and z go in reverse order, so we must flip the sign
+
+	return _SUCCESS_;
+
+}
 /**
 * Free the thermo_vector structure, which is the '->ptv' field of the thermodynamics_differential_workspace ptdw structure
 *
@@ -4667,8 +4781,11 @@ int thermodynamics_output_titles(
   class_store_columntitle(titles,"z",_TRUE_);
   class_store_columntitle(titles,"conf. time [Mpc]",_TRUE_);
   class_store_columntitle(titles,"x_e",_TRUE_);
-	class_store_columntitle(titles,"x_fid",_TRUE_);
-	class_store_columntitle(titles,"xe_pert",_TRUE_);
+  class_store_columntitle(titles,"x_fid",_TRUE_);
+  class_store_columntitle(titles,"xe_pert",_TRUE_);
+  if(pth->has_exotic_injection){
+	class_store_columntitle(titles,"xe_rec",_TRUE_);
+  }
   class_store_columntitle(titles,"kappa' [Mpc^-1]",_TRUE_);
   //class_store_columntitle(titles,"kappa''",_TRUE_);
   //class_store_columntitle(titles,"kappa'''",_TRUE_);
@@ -4749,6 +4866,9 @@ int thermodynamics_output_data(
     class_store_double(dataptr,pvecthermo[pth->index_th_xe],_TRUE_,storeidx);
 	class_store_double(dataptr,pvecthermo[pth->index_th_xe_fid],_TRUE_,storeidx);
 	class_store_double(dataptr,pvecthermo[pth->index_th_xe_pert],_TRUE_,storeidx);
+	if(pth->has_exotic_injection==_TRUE_){
+		class_store_double(dataptr,pvecthermo[pth->index_th_xe_rec],_TRUE_,storeidx);
+	}
     class_store_double(dataptr,pvecthermo[pth->index_th_dkappa],_TRUE_,storeidx);
     //class_store_double(dataptr,pvecthermo[pth->index_th_ddkappa],_TRUE_,storeidx);
     //class_store_double(dataptr,pvecthermo[pth->index_th_dddkappa],_TRUE_,storeidx);

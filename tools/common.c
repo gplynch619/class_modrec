@@ -69,6 +69,25 @@ int compare_doubles(const void *a,
 }
 
 /**
+ * Finds whether two doubles are equal or which one is bigger
+ *
+ * @param a Input: first number
+ * @param b Input: second number
+ * @return -1, 1 or 0
+ */
+
+int compare_ints(const void *a,
+                    const void *b){
+  int *x = (int *) a;
+  int *y = (int *) b;
+  if (*x < *y)
+    return -1;
+  else if
+    (*x > *y) return 1;
+  return 0;
+}
+
+/**
  * This function detects if a string begins with a character,
  * ignoring whitespaces during its search
  *

@@ -1374,6 +1374,9 @@ cdef class Class:
     def tau_reio(self):
         return self.th.tau_reio
 
+    def tau_excess(self):
+        return self.th.tau_excess
+
     def Omega_m(self):
         return self.ba.Omega0_m
 
@@ -2326,6 +2329,8 @@ cdef class Class:
                 value = self.th.a_idm_dr
             elif name == 'tau_reio':
                 value = self.th.tau_reio
+            elif name == 'tau_excess':
+                value = self.th.tau_excess
             elif name == 'z_reio':
                 value = self.th.z_reio
             elif name == 'z_rec':
