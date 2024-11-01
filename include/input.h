@@ -281,11 +281,11 @@ extern "C" {
 
   /* Functions related to shooting */
 
-  int input_exotic_baseline_xe(struct file_content * pfc,
+  int input_baseline_xe(struct file_content * pfc,
                        struct thermodynamics * pth,
                        ErrorMsg errmsg);
 
-  int input_compute_exotic_baseline_xe(struct exotic_baseline_xe_workspace * pebxw,
+  int input_compute_baseline_xe(struct exotic_baseline_xe_workspace * pebxw,
                        int * size_of_array,
                        ErrorMsg errmsg);
 

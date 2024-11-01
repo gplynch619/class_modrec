@@ -30,7 +30,7 @@ enum reionization_parametrization {
                                    reio_half_tanh,  /**< half a tanh, instead of the full tanh */
                                    reio_many_tanh,  /**< similar to reio_camb but with more than one tanh */
                                    reio_inter       /**< linear interpolation between specified points */
-};
+                                  };
 
 enum xe_perturbation_type {
 	xe_pert_none,
@@ -94,6 +94,8 @@ struct thermodynamics
   short compute_cb2_derivatives; /**< do we want to include in computation derivatives of baryon sound speed? */
 
   short compute_damping_scale; /**< do we want to compute the simplest analytic approximation to the photon damping (or diffusion) scale? */
+
+  short compute_tau_excess; /**< do we want to compute the optical depth for all free electrons in excess of the recombination residual? */
 
   /* Parameters for X_e(z) perturbations */
   enum xe_perturbation_type xe_pert_type;
@@ -159,6 +161,7 @@ struct thermodynamics
   double * many_tanh_xe; /**< imposed \f$ X_e(z)\f$ value at the end of each jump (ie at later times)*/
 
   double many_tanh_width; /**< sharpness of tanh() steps */
+
 
   /** parameters for reio_inter */
 

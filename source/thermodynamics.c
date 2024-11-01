@@ -82,7 +82,7 @@ int thermodynamics_at_z(
 		/* ionization fraction assumed to remain constant at large z */
 		x0= pth->thermodynamics_table[(pth->tt_size-1)*pth->th_size+pth->index_th_xe];
 		pvecthermo[pth->index_th_xe] = x0;
-		if(pth->has_exotic_injection){
+		if(pth->compute_tau_excess){
 			pvecthermo[pth->index_th_xe_rec] = x0;
 		}
 		/* In the case of varying fundamental constants, compute correction factor (according to 1705.03925) */
@@ -96,7 +96,7 @@ int thermodynamics_at_z(
 		/* Calculate dkappa/dtau (dkappa/dtau = a n_e x_e sigma_T = a^{-2} n_e(today) x_e sigma_T in units of 1/Mpc) */
 		pvecthermo[pth->index_th_dkappa] = (1.+z) * (1.+z) * pth->n_e * x0 * sigmaTrescale * _sigma_ * _Mpc_over_m_;
 
-		if(pth->has_exotic_injection){
+		if(pth->compute_tau_excess){
 			pvecthermo[pth->index_th_dkappa_ex] = (1.+z) * (1.+z) * pth->n_e * (x0-x0) * sigmaTrescale * _sigma_ * _Mpc_over_m_;
 		}
 
@@ -111,7 +111,7 @@ int thermodynamics_at_z(
 
 		/* Calculate d2kappa/dtau2 = dz/dtau d/dz[dkappa/dtau] given that [dkappa/dtau] proportional to (1+z)^2 and dz/dtau = -H */
 		pvecthermo[pth->index_th_ddkappa] = -pvecback[pba->index_bg_H] * 2. / (1.+z) * pvecthermo[pth->index_th_dkappa];
-		if(pth->has_exotic_injection){
+		if(pth->compute_tau_excess){
 			pvecthermo[pth->index_th_ddkappa_ex] = -pvecback[pba->index_bg_H] * 2. / (1.+z) * pvecthermo[pth->index_th_dkappa_ex];
 
 		}
@@ -410,7 +410,7 @@ int thermodynamics_init(
 						pth->error_message,
 						pth->error_message);
 
-	if (pth->has_exotic_injection == _TRUE_) {
+	if (pth->compute_tau_excess == _TRUE_) {
 
 		for (int indx=0; indx<pth->tt_size-1; indx++) {
 			pth->thermodynamics_table[indx*pth->th_size+pth->index_th_xe_rec] = pth->baseline_xe[indx];
@@ -1156,7 +1156,7 @@ int thermodynamics_indices(
 	class_define_index(pth->index_th_xe,_TRUE_,index_th,1);
 	class_define_index(pth->index_th_xe_fid,_TRUE_,index_th,1);
 	class_define_index(pth->index_th_xe_pert,_TRUE_,index_th,1);
-	if(pth->has_exotic_injection){
+	if(pth->compute_tau_excess){
 		class_define_index(pth->index_th_xe_rec,_TRUE_,index_th,1);
 	}
 	/* Optical depth and related quantities */
@@ -1165,7 +1165,7 @@ int thermodynamics_indices(
 	class_define_index(pth->index_th_dddkappa,_TRUE_,index_th,1);
 	class_define_index(pth->index_th_exp_m_kappa,_TRUE_,index_th,1);
 	/* "Excess" optical depth quantities, defined as the optical depth in excess of what would be present due to the residual x_e from recombination alone*/
-	if(pth->has_exotic_injection){
+	if(pth->compute_tau_excess){
 		class_define_index(pth->index_th_dkappa_ex,_TRUE_,index_th,1);
 		class_define_index(pth->index_th_ddkappa_ex,_TRUE_,index_th,1);
 		class_define_index(pth->index_th_dddkappa_ex,_TRUE_,index_th,1);
@@ -1900,7 +1900,7 @@ int thermodynamics_solve(
 							pth->error_message);
 
 		pth->tau_reio=ptw->reionization_optical_depth;
-		if(pth->has_exotic_injection){
+		if(pth->compute_tau_excess){
 			class_call(thermodynamics_get_tau_excess(pth,
 													ptw),
 					pth->error_message,
@@ -2066,7 +2066,7 @@ int thermodynamics_output_summary(
 		break;
 	}
 
-	if(pth->has_exotic_injection){
+	if(pth->compute_tau_excess){
 		printf(" -> optical depth in excess of recomb. residual = %f\n",pth->tau_excess);
 	}
 
@@ -3215,7 +3215,7 @@ int thermodynamics_sources(
 	pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_xe_pert] = xpert;
 
 	double x_rec;
-	if(pth->has_exotic_injection){
+	if(pth->compute_tau_excess){
 		x_rec = pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_xe_rec];
 	}
 	/* Tb */
@@ -3236,7 +3236,7 @@ int thermodynamics_sources(
 	pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_dkappa]
 		= (1.+z) * (1.+z) * ptw->SIunit_nH0 * x * sigmaTrescale * _sigma_ * _Mpc_over_m_;
 
-	if(pth->has_exotic_injection){
+	if(pth->compute_tau_excess){
 		pth->thermodynamics_table[(pth->tt_size-index_z-1)*pth->th_size+pth->index_th_dkappa_ex] = (1.+z) * (1.+z) * ptw->SIunit_nH0 * (x-x_rec) * sigmaTrescale * _sigma_ * _Mpc_over_m_;
 	}
 
@@ -4680,36 +4680,74 @@ int thermodynamics_reionization_function(
 		/** - implementation of many tanh jumps */
 	case reio_many_tanh:
 
-		/** - --> case z > z_reio_start */
-		if (z > preio->reionization_parameters[preio->index_re_first_z+preio->re_z_size-1]) {
-			*x = preio->reionization_parameters[preio->index_re_xe_before];
-		}
-		else if (z > preio->reionization_parameters[preio->index_re_first_z]) {
+		if((pth->many_tanh_num==4) && (pth->many_tanh_xe[2]==0)){
+			/* bump reio procedure*/
+			/** - --> case z > z_reio_start */
+			if (z > preio->reionization_parameters[preio->index_re_first_z+preio->re_z_size-1]) {
+				*x = preio->reionization_parameters[preio->index_re_xe_before];
+			} else if (z > preio->reionization_parameters[preio->index_re_first_z]) {
+				*x = preio->reionization_parameters[preio->index_re_xe_before];
 
-			*x = preio->reionization_parameters[preio->index_re_xe_before];
+				/* fix the final xe to xe_before*/
+				preio->reionization_parameters[preio->index_re_first_xe+preio->re_z_size-1] = preio->reionization_parameters[preio->index_re_xe_before];
 
-			/* fix the final xe to xe_before*/
-			preio->reionization_parameters[preio->index_re_first_xe+preio->re_z_size-1] = preio->reionization_parameters[preio->index_re_xe_before];
+				for (jump=1; jump<preio->re_z_size-1; jump++) {
 
-			for (jump=1; jump<preio->re_z_size-1; jump++) {
+					center = preio->reionization_parameters[preio->index_re_first_z+preio->re_z_size-1-jump];
 
-				center = preio->reionization_parameters[preio->index_re_first_z+preio->re_z_size-1-jump];
+					/* before and after are meant with respect to growing z, not growing time */
+					if (jump==2){
+						before = - (preio->reionization_parameters[preio->index_re_first_xe+preio->re_z_size-1-jump+1]
+							-preio->reionization_parameters[preio->index_re_first_xe+preio->re_z_size-jump+1]);
+					} else {
+						before = preio->reionization_parameters[preio->index_re_first_xe+preio->re_z_size-1-jump]
+							-preio->reionization_parameters[preio->index_re_first_xe+preio->re_z_size-jump];
+					}
 
-				/* before and after are meant with respect to growing z, not growing time */
-				before = preio->reionization_parameters[preio->index_re_first_xe+preio->re_z_size-1-jump]
-					-preio->reionization_parameters[preio->index_re_first_xe+preio->re_z_size-jump];
-				after = 0.;
-				width = preio->reionization_parameters[preio->index_re_step_sharpness];
+					after = 0.;
+					width = preio->reionization_parameters[preio->index_re_step_sharpness];
 
-				one_jump = before + (after-before)*(tanh((z-center)/width)+1.)/2.;
+					one_jump = before + (after-before)*(tanh((z-center)/width)+1.)/2.;
 
-				*x += one_jump;
+					*x += one_jump;
+				}
+			} else {
+				*x = preio->reionization_parameters[preio->index_re_first_xe];
 			}
+		} else{
+			/* normal many tanh procedur*/
+			/** - --> case z > z_reio_start */
+			if (z > preio->reionization_parameters[preio->index_re_first_z+preio->re_z_size-1]) {
+				*x = preio->reionization_parameters[preio->index_re_xe_before];
+			}
+			else if (z > preio->reionization_parameters[preio->index_re_first_z]) {
 
+				*x = preio->reionization_parameters[preio->index_re_xe_before];
+
+				/* fix the final xe to xe_before*/
+				preio->reionization_parameters[preio->index_re_first_xe+preio->re_z_size-1] = preio->reionization_parameters[preio->index_re_xe_before];
+
+				for (jump=1; jump<preio->re_z_size-1; jump++) {
+
+					center = preio->reionization_parameters[preio->index_re_first_z+preio->re_z_size-1-jump];
+
+					/* before and after are meant with respect to growing z, not growing time */
+					before = preio->reionization_parameters[preio->index_re_first_xe+preio->re_z_size-1-jump]
+						-preio->reionization_parameters[preio->index_re_first_xe+preio->re_z_size-jump];
+					after = 0.;
+					width = preio->reionization_parameters[preio->index_re_step_sharpness];
+
+					one_jump = before + (after-before)*(tanh((z-center)/width)+1.)/2.;
+
+					*x += one_jump;
+				}
+
+			}
+			else{
+				*x = preio->reionization_parameters[preio->index_re_first_xe];
+			}
 		}
-		else{
-			*x = preio->reionization_parameters[preio->index_re_first_xe];
-		}
+		
 		break;
 
 		/** - implementation of reio_inter */
@@ -4783,7 +4821,7 @@ int thermodynamics_output_titles(
   class_store_columntitle(titles,"x_e",_TRUE_);
   class_store_columntitle(titles,"x_fid",_TRUE_);
   class_store_columntitle(titles,"xe_pert",_TRUE_);
-  if(pth->has_exotic_injection){
+  if(pth->compute_tau_excess){
 	class_store_columntitle(titles,"xe_rec",_TRUE_);
   }
   class_store_columntitle(titles,"kappa' [Mpc^-1]",_TRUE_);
@@ -4866,7 +4904,7 @@ int thermodynamics_output_data(
     class_store_double(dataptr,pvecthermo[pth->index_th_xe],_TRUE_,storeidx);
 	class_store_double(dataptr,pvecthermo[pth->index_th_xe_fid],_TRUE_,storeidx);
 	class_store_double(dataptr,pvecthermo[pth->index_th_xe_pert],_TRUE_,storeidx);
-	if(pth->has_exotic_injection==_TRUE_){
+	if(pth->compute_tau_excess==_TRUE_){
 		class_store_double(dataptr,pvecthermo[pth->index_th_xe_rec],_TRUE_,storeidx);
 	}
     class_store_double(dataptr,pvecthermo[pth->index_th_dkappa],_TRUE_,storeidx);

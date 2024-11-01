@@ -79,7 +79,6 @@ int input_init(int argc,
 																	errmsg),
 						errmsg,
 						errmsg);
-	printf("Freeing input structs\n");
 	/** Free local struture */
 	class_call(parser_free(&fc),
 						errmsg,
@@ -429,11 +428,11 @@ int input_read_from_file(struct file_content * pfc,
                errmsg);
   }
 
-  if(pth->has_exotic_injection == _TRUE_){
-       if (input_verbose > 0) {
-      printf(" -> has_exotic_injection is TRUE,\n");
-      }
-      class_call(input_exotic_baseline_xe(pfc,pth,errmsg), errmsg, errmsg);
+  if(pth->compute_tau_excess == _TRUE_){
+	if (input_verbose > 0) {
+		printf(" -> compute_tau_excess is TRUE,\n");
+	}
+	class_call(input_baseline_xe(pfc,pth,errmsg), errmsg, errmsg);
   }
 
 	/** Write info on the read/unread parameters. This is the correct place to do it,
@@ -461,7 +460,7 @@ int input_read_from_file(struct file_content * pfc,
 
 }
 
-int input_exotic_baseline_xe(struct file_content * pfc,
+int input_baseline_xe(struct file_content * pfc,
                    struct thermodynamics * pth,
                    ErrorMsg errmsg){
 
@@ -473,7 +472,8 @@ int input_exotic_baseline_xe(struct file_content * pfc,
 
 	// first, count number of exotic injection params, then write them down so we know where they are
 	int exotic_param_count = 0;
-	
+	int * exotic_param_indices;
+
   	for(i=0; i<pfc->size; i++){
 		char start[4];
 		strncpy(start, pfc->name[i], 3);
@@ -482,7 +482,6 @@ int input_exotic_baseline_xe(struct file_content * pfc,
 			exotic_param_count++;
 		}
 		if(strcmp(start,"PBH") == 0){
-			printf("comparison worked!\n");
 			exotic_param_count++;
 		}
 		if(strcmp(start,"f_e") == 0){
@@ -493,47 +492,54 @@ int input_exotic_baseline_xe(struct file_content * pfc,
 		} // all exotic params, and only them, begin with one of the four above strings
   	}
 
-	int * exotic_param_indices;
+	int j=0;
 
-	class_alloc(exotic_param_indices,
-				exotic_param_count*sizeof(int),
-				errmsg);
+	if (exotic_param_count > 0){
 
-	int j = 0;
-  	for(i=0; i<pfc->size; i++){
-		char start[4];
-		strncpy(start, pfc->name[i], 3);
-		start[3]='\0';
-		if(strcmp(start,"DM_") == 0){
-			exotic_param_indices[j] = i;
-			j++;
-		}
-		if(strcmp(start,"PBH") == 0){
-			exotic_param_indices[j] = i;
-			j++;
-		}
-		if(strcmp(start,"f_e") == 0){
-			exotic_param_indices[j] = i;
-			j++;
-		}
-		if(strcmp(start,"chi") == 0){
-			exotic_param_indices[j] = i;
-			j++;
+		class_alloc(exotic_param_indices,
+					exotic_param_count*sizeof(int),
+					errmsg);
+
+		for(i=0; i<pfc->size; i++){
+			char start[4];
+			strncpy(start, pfc->name[i], 3);
+			start[3]='\0';
+			if(strcmp(start,"DM_") == 0){
+				exotic_param_indices[j] = i;
+				j++;
+			}
+			if(strcmp(start,"PBH") == 0){
+				exotic_param_indices[j] = i;
+				j++;
+			}
+			if(strcmp(start,"f_e") == 0){
+				exotic_param_indices[j] = i;
+				j++;
+			}
+			if(strcmp(start,"chi") == 0){
+				exotic_param_indices[j] = i;
+				j++;
+			}
 		}
 	}
 
 	short has_reio_parametrization = _FALSE_;
 	int reio_parametrization_index;
+	int compute_tau_excess_index;
 
 	for(i=0; i<pfc->size; i++){
 		if(strcmp(pfc->name[i],"reio_parametrization") == 0){
 			has_reio_parametrization = _TRUE_;
 			reio_parametrization_index = i;
 		}
+		if(strcmp(pfc->name[i],"compute_tau_excess") == 0){
+			compute_tau_excess_index = i;
+		}
 	}
 
 	int reio_param_count = 0;	
 	int * reio_param_indices;
+
 	if(has_reio_parametrization){
 
 		switch (pth->reio_parametrization) {
@@ -760,46 +766,68 @@ int input_exotic_baseline_xe(struct file_content * pfc,
 		
 			break;
 		}
+	} else {
+		reio_param_count++;
+		class_alloc(reio_param_indices,
+					reio_param_count*sizeof(int),
+					errmsg);
+			
+		j=0;
+
+		for(i=0; i<pfc->size; i++){
+			if(strcmp(pfc->name[i],"z_reio") == 0){
+				reio_param_indices[j]=i;
+				//fprintf(stdout, "z_reio index = %d\n", i);
+			}
+		}
 	}
 
 	/* At this point, we should know how many input parameters we are skipping, and where they are*/
 
-	int num_skip_indices=0; /* number of indices to skip when initializing the new file content*/
+	// int num_skip_indices=0; /* number of indices to skip when initializing the new file content*/
 
-	num_skip_indices += exotic_param_count;
+	int num_skip_indices = exotic_param_count + reio_param_count;
 
-	if(has_reio_parametrization){
-		if (pth->reio_parametrization!=reio_none){ /*have to account for the case where we have explicitly set reio_parameterization = reio_none, so reio_param_indices is unallocated and we have no parameters to skip*/
-			num_skip_indices+=reio_param_count;
-		}
-	}
+	// num_skip_indices += exotic_param_count;
+
+	// if (has_reio_parametrization){
+	// 	if (pth->reio_parametrization!=reio_none){ /*have to account for the case where we have explicitly set reio_parameterization = reio_none, so reio_param_indices is unallocated and we have no parameters to skip*/
+	// 		num_skip_indices+=reio_param_count;
+	// 	}
+	// } else {
+	// num_skip_indices+=reio_param_count;
+	// }
+
 
 	int * total_skip_indices;
 	class_alloc(total_skip_indices,
 				num_skip_indices*sizeof(int),
 				errmsg);
 	j=0;
-	for(i=0; i<exotic_param_count; i++){
-		total_skip_indices[j] = exotic_param_indices[i];
-		j++; 
-	}
-
-	if(has_reio_parametrization){
-		if(reio_param_count>0){
-			for(i=0; i<reio_param_count; i++){
-				total_skip_indices[j] = reio_param_indices[i];
-			}
+	if(exotic_param_count>0){
+		for(i=0; i<exotic_param_count; i++){
+			total_skip_indices[j] = exotic_param_indices[i];
+			j++; 
 		}
 	}
+	if(reio_param_count>0){ /* guranteed to be at least 1 */
+		for(i=0; i<reio_param_count; i++){
+			total_skip_indices[j] = reio_param_indices[i];
+			j++;
+		}
+	}
+	
+	if(exotic_param_count>0){
+		free(exotic_param_indices);
+	}
 
-	free(exotic_param_indices);
-	if(has_reio_parametrization){
+	if(reio_param_count>0){
 		free(reio_param_indices);
 	}
 
-
-	qsort(total_skip_indices, num_skip_indices, sizeof(int), compare_ints);
-
+	if (num_skip_indices>1){
+		qsort(total_skip_indices, num_skip_indices, sizeof(int), compare_ints);
+	}
 
 	/* we now have a sorted array of all the indices from the original fc we want to skip copying over to the new fc*/
 
@@ -818,8 +846,12 @@ int input_exotic_baseline_xe(struct file_content * pfc,
 	int k=0;
 	for(i=0; i<pfc->size; i++){
 		if(i==next_skip_ind){
-			next_skip_ind = total_skip_indices[++j];
-			continue;
+			if(j+1==num_skip_indices){
+				continue;
+			} else {
+				next_skip_ind = total_skip_indices[++j];
+				continue;
+			}
 		} else {
 			memcpy(ebxw.fc.name+k, pfc->name+i, sizeof(FileArg));
 			memcpy(ebxw.fc.value+k, pfc->value+i, sizeof(FileArg));
@@ -831,16 +863,19 @@ int input_exotic_baseline_xe(struct file_content * pfc,
 	if(has_reio_parametrization){
 		class_sprintf(ebxw.fc.value[reio_parametrization_index], "%s", "reio_none");
 	} else {
-		strcpy(ebxw.fc.name[k], "reio_parametrization"); 
-		strcpy(ebxw.fc.value[k],"reio_none");
+		class_sprintf(ebxw.fc.name[k], "%s", "reio_parametrization");
+		class_sprintf(ebxw.fc.value[k], "%s", "reio_none");
+		// strcpy(ebxw.fc.name[k], "reio_parametrization"); 
+		// strcpy(ebxw.fc.value[k],"reio_none");
 	}
+
+	class_sprintf(ebxw.fc.value[compute_tau_excess_index], "%s", "no");
 
 	/* the workspace is now set up to do the needful, we can free arrays*/
 
 	free(total_skip_indices);
 	int arr_size;
-	input_compute_exotic_baseline_xe(&(ebxw), &arr_size, errmsg);
-	fprintf(stdout, "sizeof(&ebxw->baseline_xe) = %i\n", arr_size);
+	input_compute_baseline_xe(&(ebxw), &arr_size, errmsg);
 
 	class_alloc(pth->baseline_xe,
 				arr_size*sizeof(double),
@@ -857,7 +892,7 @@ int input_exotic_baseline_xe(struct file_content * pfc,
 }
 
 
-int input_compute_exotic_baseline_xe(struct exotic_baseline_xe_workspace * pebxw,
+int input_compute_baseline_xe(struct exotic_baseline_xe_workspace * pebxw,
 								int * size_of_array, /*output for size of allocated array*/
                                 ErrorMsg errmsg){
 
@@ -876,7 +911,7 @@ int input_compute_exotic_baseline_xe(struct exotic_baseline_xe_workspace * pebxw
   int input_verbose;
   int flag;
   int param;
-  
+
   class_call(input_read_precisions(&(pebxw->fc),&pr,&ba,&th,&pt,&tr,&pm,&hr,&fo,&le,&sd,&op,
                                    errmsg),
              errmsg,
@@ -939,7 +974,6 @@ int input_compute_exotic_baseline_xe(struct exotic_baseline_xe_workspace * pebxw
 
 	thermodynamics_free_input(&th);
 
-	printf(" -> baseline calculated!,\n");
 	return _SUCCESS_;
 
 }
@@ -2813,7 +2847,14 @@ int input_read_parameters_general(struct file_content * pfc,
 	  		break;	
 	}
 	
-		
+	class_call(parser_read_string(pfc,"compute_tau_excess",&string1,&flag1,errmsg), errmsg, errmsg);
+
+	if(flag1 == _TRUE_){
+		if(string_begins_with(string1,'y') || string_begins_with(string1,'Y')){
+			pth->compute_tau_excess = _TRUE_;
+		}
+	}
+
 	/** 8) Reionization parametrization */
 	/* Read */
 	class_call(parser_read_string(pfc,"reio_parametrization",&string1,&flag1,errmsg),
@@ -2835,6 +2876,7 @@ int input_read_parameters_general(struct file_content * pfc,
 		}
 		else if (strcmp(string1,"reio_many_tanh") == 0){
 			pth->reio_parametrization = reio_many_tanh;
+			pth->compute_tau_excess = _TRUE_;
 		}
 		else if (strcmp(string1,"reio_inter") == 0){
 			pth->reio_parametrization = reio_inter;
@@ -4141,6 +4183,11 @@ int input_read_parameters_injection(struct file_content * pfc,
     pth->has_exotic_injection = _TRUE_;
   }
   /* Test */
+
+  if (pth->has_exotic_injection == _TRUE_){
+	pth->compute_tau_excess = _TRUE_;
+  }
+
   class_test(pin->PBH_accretion_fraction < 0.,
              errmsg,
              "You need to enter a positive fraction of accreting PBH. Please adjust your param file.");
@@ -6342,6 +6389,8 @@ int input_default_params(struct background *pba,
 	pth->xe_pert_width = 0; 
 	pth->is_shooting = _FALSE_;
 
+	pth->compute_tau_excess = _FALSE_;
+
 	/** 8) Parametrization of reionization */
 	pth->reio_parametrization=reio_camb;
 	/** 8.a) 'reio_camb' or 'reio_half_tanh' case */
@@ -6808,5 +6857,4 @@ int input_default_params(struct background *pba,
 	pop->output_verbose = 0;
 
 	return _SUCCESS_;
-
 }
