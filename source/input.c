@@ -474,6 +474,10 @@ int input_baseline_xe(struct file_content * pfc,
 	int exotic_param_count = 0;
 	int * exotic_param_indices;
 
+	//for(int m=0; m<pfc->size; m++){
+//		fprintf(stdout, "%s = %s\n", pfc->name[m] , pfc->value[m]);
+//	}
+
   	for(i=0; i<pfc->size; i++){
 		char start[4];
 		strncpy(start, pfc->name[i], 3);
@@ -831,10 +835,6 @@ int input_baseline_xe(struct file_content * pfc,
 
 	/* we now have a sorted array of all the indices from the original fc we want to skip copying over to the new fc*/
 
-	// for(j=0; j<num_skip_indices; j++){
-	// 	fprintf(stdout, "total_skip_indices[%d] = %d\n", j, total_skip_indices[j]);
-	// }
-
   	class_call(parser_init(&(ebxw.fc),
                           pfc->size-num_skip_indices+(!has_reio_parametrization), // we will reuse the reio_parametrization if we found it. If not, we need to allocate an extra spot for that.
                           pfc->filename,
@@ -857,6 +857,16 @@ int input_baseline_xe(struct file_content * pfc,
 			memcpy(ebxw.fc.value+k, pfc->value+i, sizeof(FileArg));
 			memcpy(ebxw.fc.read+k, pfc->read+i, sizeof(short));
 			k++;
+		}	
+		
+	}
+
+	for(i=0; i<ebxw.fc.size; i++){
+		if(strcmp(ebxw.fc.name[i],"reio_parametrization") == 0){
+			reio_parametrization_index = i;
+		}
+		if(strcmp(ebxw.fc.name[i],"compute_tau_excess") == 0){
+			compute_tau_excess_index = i;
 		}
 	}
 
@@ -875,7 +885,7 @@ int input_baseline_xe(struct file_content * pfc,
 
 	free(total_skip_indices);
 	int arr_size;
-	input_compute_baseline_xe(&(ebxw), &arr_size, errmsg);
+	class_call(input_compute_baseline_xe(&(ebxw), &arr_size, errmsg), errmsg, errmsg);
 
 	class_alloc(pth->baseline_xe,
 				arr_size*sizeof(double),

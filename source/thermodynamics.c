@@ -3393,7 +3393,7 @@ int thermodynamics_get_tau_excess(struct thermodynamics * pth,
 						pth->error_message);
 
 	for (index_z=0; index_z<pth->tt_size-1; index_z++) {
-		if (pth->z_table[index_z] > 4000) {
+		if (pth->z_table[index_z] > pth->z_star) {
 			index_reio_start = index_z;
 		}
 	}
