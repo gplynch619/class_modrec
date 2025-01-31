@@ -7381,7 +7381,7 @@ int perturbations_sources(
   double a_prime_over_a_prime=0.;  /* (a'/a)' */
   double w_fld,dw_over_da_fld,integral_fld;
   int switch_isw = 1;
-
+  double A_ISW;
   double a, a2, f_dr;
 
   double H_T_Nb_prime=0., rho_tot;
@@ -7505,6 +7505,12 @@ int perturbations_sources(
         switch_isw=0;
       }
 
+      if ((ppt->switch_eisw == 1) && (z >= ppt->eisw_lisw_split_z)){
+          A_ISW = sqrt(ppt->A_eISW);
+      } else {
+        A_ISW = 1;
+      }
+
       /* newtonian gauge: simplest form, not efficient numerically */
       /*
         if (ppt->gauge == newtonian) {
@@ -7520,22 +7526,22 @@ int perturbations_sources(
         if (pth->has_idm_g == _TRUE_ ){
           _set_source_(ppt->index_tp_t0) =
             ppt->switch_sw * g * (delta_g / 4. + pvecmetric[ppw->index_mt_psi])
-            + switch_isw * ( g * (y[ppw->pv->index_pt_phi]-pvecmetric[ppw->index_mt_psi])
+            + switch_isw * A_ISW * ( g * (y[ppw->pv->index_pt_phi]-pvecmetric[ppw->index_mt_psi])
                              + exp_m_kappa * exp_mu_idm_g * 2. * pvecmetric[ppw->index_mt_phi_prime])
             + ppt->switch_dop /k/k * ( g *(dkappa * theta_b + dmu_idm_g*theta_idm)
                                        + exp_mu_idm_g * exp_m_kappa * (ddkappa*theta_b + ddmu_idm_g* theta_idm + dkappa * theta_b_prime + dmu_idm_g * theta_idm_prime) );
 
-          _set_source_(ppt->index_tp_t1) = switch_isw * exp_m_kappa * exp_mu_idm_g * k* (pvecmetric[ppw->index_mt_psi]-y[ppw->pv->index_pt_phi]);
+          _set_source_(ppt->index_tp_t1) = switch_isw * A_ISW * exp_m_kappa * exp_mu_idm_g * k* (pvecmetric[ppw->index_mt_psi]-y[ppw->pv->index_pt_phi]);
 
         }
         else {
           _set_source_(ppt->index_tp_t0) =
             ppt->switch_sw * g * (delta_g / 4. + pvecmetric[ppw->index_mt_psi])
-            + switch_isw * ( g * (y[ppw->pv->index_pt_phi]-pvecmetric[ppw->index_mt_psi])
+            + switch_isw * A_ISW * ( g * (y[ppw->pv->index_pt_phi]-pvecmetric[ppw->index_mt_psi])
                              + exp_m_kappa * 2. * pvecmetric[ppw->index_mt_phi_prime])
             + ppt->switch_dop /k/k * ( g * theta_b_prime  + g_prime * theta_b);
 
-          _set_source_(ppt->index_tp_t1) = switch_isw * exp_m_kappa * k* (pvecmetric[ppw->index_mt_psi]-y[ppw->pv->index_pt_phi]);
+          _set_source_(ppt->index_tp_t1) = switch_isw * A_ISW * exp_m_kappa * k* (pvecmetric[ppw->index_mt_psi]-y[ppw->pv->index_pt_phi]);
         }
 
         _set_source_(ppt->index_tp_t2) = ppt->switch_pol * g * P;
@@ -7564,7 +7570,7 @@ int perturbations_sources(
 
           _set_source_(ppt->index_tp_t0) =
             ppt->switch_sw * g * (delta_g/4. + pvecmetric[ppw->index_mt_alpha_prime])
-            + switch_isw * ( g * (y[ppw->pv->index_pt_eta]
+            + switch_isw * A_ISW * ( g * (y[ppw->pv->index_pt_eta]
                                   - pvecmetric[ppw->index_mt_alpha_prime]
                                   - 2 * a_prime_over_a * pvecmetric[ppw->index_mt_alpha])
                              +  exp_m_kappa * exp_mu_idm_g * 2. * (pvecmetric[ppw->index_mt_eta_prime]
@@ -7577,7 +7583,7 @@ int perturbations_sources(
 
 
           _set_source_(ppt->index_tp_t1) =
-            switch_isw * exp_m_kappa * exp_mu_idm_g * k * (pvecmetric[ppw->index_mt_alpha_prime]
+            switch_isw * A_ISW * exp_m_kappa * exp_mu_idm_g * k * (pvecmetric[ppw->index_mt_alpha_prime]
                                                            + 2. * a_prime_over_a * pvecmetric[ppw->index_mt_alpha]
                                                            - y[ppw->pv->index_pt_eta]);
 
@@ -7585,7 +7591,7 @@ int perturbations_sources(
         else {
           _set_source_(ppt->index_tp_t0) =
             ppt->switch_sw * g * (delta_g/4. + pvecmetric[ppw->index_mt_alpha_prime])
-            + switch_isw * ( g * (y[ppw->pv->index_pt_eta]
+            + switch_isw * A_ISW * ( g * (y[ppw->pv->index_pt_eta]
                                   - pvecmetric[ppw->index_mt_alpha_prime]
                                   - 2 * a_prime_over_a * pvecmetric[ppw->index_mt_alpha])
                              + exp_m_kappa * 2. * (pvecmetric[ppw->index_mt_eta_prime]
@@ -7595,7 +7601,7 @@ int perturbations_sources(
 
 
           _set_source_(ppt->index_tp_t1) =
-            switch_isw * exp_m_kappa * k * (pvecmetric[ppw->index_mt_alpha_prime]
+            switch_isw * A_ISW * exp_m_kappa * k * (pvecmetric[ppw->index_mt_alpha_prime]
                                             + 2. * a_prime_over_a * pvecmetric[ppw->index_mt_alpha]
                                             - y[ppw->pv->index_pt_eta]);
         }
