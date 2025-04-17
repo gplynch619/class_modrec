@@ -3430,6 +3430,15 @@ int input_read_parameters_species(struct file_content * pfc,
     pba->Omega0_dcdmdr = param1;
   if (flag2 == _TRUE_)
     pba->Omega0_dcdmdr = param2/pba->h/pba->h;
+
+  if(pba->Omega0_dcdmdr<0){
+	pba->Omega0_dcdmdr = 0; 
+	/* When omega_ini_dcdm is passed with a decay rate such that the density in
+	   decaying dark matter + dark radiation is very small today, sometimes the shooting method
+	   returns a very small and negative value of omega_dcdmdr, which translates to a negative 
+	   value here (~ - 1e-5). The above line zeroes it out.
+	 */
+  }
   class_test(pba->Omega0_dcdmdr<0,errmsg,"You cannot set the dcdmdr density to negative values.");
 
   /** 7.1.b) Omega_ini_dcdm or omega_ini_dcdm */
