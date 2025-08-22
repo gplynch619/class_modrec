@@ -411,7 +411,6 @@ int thermodynamics_init(
 						pth->error_message);
 
 	if (pth->compute_tau_excess == _TRUE_) {
-
 		for (int indx=0; indx<pth->tt_size-1; indx++) {
 			pth->thermodynamics_table[indx*pth->th_size+pth->index_th_xe_rec] = pth->baseline_xe[indx];
 		}
@@ -443,7 +442,6 @@ int thermodynamics_init(
 						pth->error_message);
 
 	free(pvecback);
-
 	return _SUCCESS_;
 }
 

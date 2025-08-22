@@ -7,17 +7,18 @@ import os
 import subprocess as sbp
 import os.path as osp
 
-# Recover the gcc compiler
+# Recover the gcc compiler - use Homebrew GCC
+#GCCPATH_STRING = sbp.Popen(
+#          ['/usr/local/Cellar/gcc/14.2.0_1/bin/gcc', '-print-libgcc-file-name'],
+#          stdout=sbp.PIPE).communicate()[0]
+#gcc_path = '/usr/local/Cellar/gcc/13.2.0/bin/gcc-13'
 GCCPATH_STRING = sbp.Popen(
           ['gcc', '-print-libgcc-file-name'],
           stdout=sbp.PIPE).communicate()[0]
-#gcc_path = '/usr/local/Cellar/gcc/13.2.0/bin/gcc-13'
-
 #GCCPATH_STRING = sbp.Popen(
 #    [gcc_path, '-print-libgcc-file-name'],
 #    stdout=sbp.PIPE).communicate()[0]
 #GCCPATH_STRING = "/opt/homebrew/Cellar/gcc/11.2.0_3/lib/gcc/11/gcc/aarch64-apple-darwin21/11"
-print(GCCPATH_STRING)
 GCCPATH = osp.normpath(osp.dirname(GCCPATH_STRING)).decode()
 
 liblist = ["class"]

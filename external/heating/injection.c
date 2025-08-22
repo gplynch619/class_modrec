@@ -22,7 +22,6 @@ int injection_init(struct precision * ppr,
                    struct thermodynamics* pth){
 
   /** Summary: */
-
   /** - Define local variable */
   struct injection* pin = &(pth->in);
   int index_inj, index_dep;
@@ -108,6 +107,7 @@ int injection_init(struct precision * ppr,
 
   /** - Initialize deposition function */
   /* Allocate space */
+
   class_alloc(pin->chi,
               pin->dep_size*sizeof(double),
               pin->error_message);
@@ -778,7 +778,6 @@ int injection_rate_PBH_evaporation_mass_evolution(struct background * pba,
   dlnz = lnz_ini/(pin->Nz_PBH-1);
   loop_z = pin->z_initial*1.0001;
   time_prev = 0.;                                                                                   // [s]
-
   /** - Alloate local variables */
   class_alloc(pvecback_loop,
               pba->bg_size*sizeof(double),
@@ -800,7 +799,6 @@ int injection_rate_PBH_evaporation_mass_evolution(struct background * pba,
   class_alloc(pin->PBH_table_F_dd,
               pin->Nz_PBH*sizeof(double),
               pin->error_message);
-
   /** - Fill tables with PBH mass evolution */
   /* For the parametrization of F(M) we follow PRD44 (1991) 376 with
    * the additional modification that we dress the "free QCD-particles"
@@ -810,9 +808,7 @@ int injection_rate_PBH_evaporation_mass_evolution(struct background * pba,
    * and to be in agreement with PRD41 (1990) 3052, where the Ansatz is taken
    * that a black hole emmits those particles which appear elementary at the
    * given energy. */
-  for(i_step = 0; i_step<pin->Nz_PBH; i_step++) {
-
-    /** - Find value of f(M) */
+  for(i_step = 0; i_step<pin->Nz_PBH; i_step++) {    /** - Find value of f(M) */
     current_pbh_temperature = 1.06e13/current_mass;                                                 // [GeV]
     pin->PBH_QCD_activation = 1./(1.+exp(-(log(current_pbh_temperature)-log(0.3))/(log(10.)*0.1))); // [-] see Eq. (4.6) of Stoecker et al. 2018
 
@@ -840,7 +836,7 @@ int injection_rate_PBH_evaporation_mass_evolution(struct background * pba,
 
     /** - Find current time value */
     class_call(background_at_z(pba,
-                               loop_z,
+                               fabs(loop_z),
                                long_info,
                                inter_normal,
                                &last_index_back_loop,
@@ -850,7 +846,6 @@ int injection_rate_PBH_evaporation_mass_evolution(struct background * pba,
     time_now = pvecback_loop[pba->index_bg_time]/(_c_/_Mpc_over_m_);                                // [s]
     dt = time_now-time_prev;
     time_prev = time_now;
-
     if (i_step > 0) {
       //TODO :: check this step
       if (current_mass > 0.5*pin->PBH_evaporation_mass){
@@ -867,12 +862,11 @@ int injection_rate_PBH_evaporation_mass_evolution(struct background * pba,
 
     /** - Fill tables */
     pin->PBH_table_z[i_step] = loop_z;
-    pin->PBH_table_mass[i_step] = current_mass;                                                     // [g]
-    pin->PBH_table_F[i_step] = f;                                                                   // [-]
+    pin->PBH_table_mass[i_step] = current_mass;                                                  // [g]
+    pin->PBH_table_F[i_step] = f;    
+                                                             // [-]
     loop_z = exp(lnz_ini-dlnz*(i_step+1))-1.;
-
   }
-
   /** - Free local variables */
   free(pvecback_loop);
 
@@ -895,7 +889,6 @@ int injection_rate_PBH_evaporation_mass_evolution(struct background * pba,
                                       pin->error_message),
              pin->error_message,
              pin->error_message);
-
   return _SUCCESS_;
 }
 

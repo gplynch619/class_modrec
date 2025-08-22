@@ -83,7 +83,7 @@ int input_init(int argc,
 	class_call(parser_free(&fc),
 						errmsg,
 						errmsg);
-
+    
 	return _SUCCESS_;
 
 }
@@ -434,7 +434,6 @@ int input_read_from_file(struct file_content * pfc,
 	}
 	class_call(input_baseline_xe(pfc,pth,errmsg), errmsg, errmsg);
   }
-
 	/** Write info on the read/unread parameters. This is the correct place to do it,
 			since we want it to happen after all the shooting business,
 			and after the final reading of all parameters */
@@ -461,429 +460,149 @@ int input_read_from_file(struct file_content * pfc,
 }
 
 int input_baseline_xe(struct file_content * pfc,
-                   struct thermodynamics * pth,
-                   ErrorMsg errmsg){
-
-	int i;
-  
-  	/* We need to remember that we shot so we can clean up properly */
-  	struct exotic_baseline_xe_workspace ebxw;
-
-
-	// first, count number of exotic injection params, then write them down so we know where they are
-	int exotic_param_count = 0;
-	int * exotic_param_indices;
-
-	//for(int m=0; m<pfc->size; m++){
-//		fprintf(stdout, "%s = %s\n", pfc->name[m] , pfc->value[m]);
-//	}
-
-  	for(i=0; i<pfc->size; i++){
-		char start[4];
-		strncpy(start, pfc->name[i], 3);
-		start[3]='\0';
-		if(strcmp(start,"DM_") == 0){
-			exotic_param_count++;
-		}
-		if(strcmp(start,"PBH") == 0){
-			exotic_param_count++;
-		}
-		if(strcmp(start,"f_e") == 0){
-			exotic_param_count++;
-		}
-		if(strcmp(start,"chi") == 0){
-			exotic_param_count++;
-		} // all exotic params, and only them, begin with one of the four above strings
-  	}
-
-	int j=0;
-
-	if (exotic_param_count > 0){
-
-		class_alloc(exotic_param_indices,
-					exotic_param_count*sizeof(int),
-					errmsg);
-
-		for(i=0; i<pfc->size; i++){
-			char start[4];
-			strncpy(start, pfc->name[i], 3);
-			start[3]='\0';
-			if(strcmp(start,"DM_") == 0){
-				exotic_param_indices[j] = i;
-				j++;
-			}
-			if(strcmp(start,"PBH") == 0){
-				exotic_param_indices[j] = i;
-				j++;
-			}
-			if(strcmp(start,"f_e") == 0){
-				exotic_param_indices[j] = i;
-				j++;
-			}
-			if(strcmp(start,"chi") == 0){
-				exotic_param_indices[j] = i;
-				j++;
-			}
-		}
-	}
-
-	short has_reio_parametrization = _FALSE_;
-	int reio_parametrization_index;
-	int compute_tau_excess_index;
-
-	for(i=0; i<pfc->size; i++){
-		if(strcmp(pfc->name[i],"reio_parametrization") == 0){
-			has_reio_parametrization = _TRUE_;
-			reio_parametrization_index = i;
-		}
-		if(strcmp(pfc->name[i],"compute_tau_excess") == 0){
-			compute_tau_excess_index = i;
-		}
-	}
-
-	int reio_param_count = 0;	
-	int * reio_param_indices;
-
-	if(has_reio_parametrization){
-
-		switch (pth->reio_parametrization) {
-		
-		case reio_none:
-		/* nothing to be read*/
-			break;
-
-	/** 8.a) Reionization parameters if reio_parametrization=reio_camb */
-		case reio_camb:
-		case reio_half_tanh:
-		/* Read */
-		  	for(i=0; i<pfc->size; i++){
-				if(strcmp(pfc->name[i],"z_reio") == 0){
-					reio_param_count++;
-				}
-
-				if(strcmp(pfc->name[i],"tau_reio") == 0){
-					reio_param_count++;
-				}
-
-				if(strcmp(pfc->name[i],"reionization_exponent") == 0){
-					reio_param_count++;
-				}
-
-				if(strcmp(pfc->name[i],"reionization_width") == 0){
-					reio_param_count++;
-				}
-
-				if(strcmp(pfc->name[i],"helium_fullreio_redshift") == 0){
-					reio_param_count++;
-				}
-
-				if(strcmp(pfc->name[i],"helium_fullreio_width") == 0){
-					reio_param_count++;
-				}
-			}
-
-			class_alloc(reio_param_indices,
-				reio_param_count*sizeof(int),
-				errmsg);
-			
-			j=0;
-		  	for(i=0; i<pfc->size; i++){
-				if(strcmp(pfc->name[i],"z_reio") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-
-				if(strcmp(pfc->name[i],"tau_reio") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-
-				if(strcmp(pfc->name[i],"reionization_exponent") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-
-				if(strcmp(pfc->name[i],"reionization_width") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-
-				if(strcmp(pfc->name[i],"helium_fullreio_redshift") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-
-				if(strcmp(pfc->name[i],"helium_fullreio_width") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-			}
-
-			break;
-
-		/** 8.b) Reionization parameters if reio_parametrization=reio_bins_tanh */
-		case reio_bins_tanh:
-			/* Read */
-
-			for(i=0; i<pfc->size; i++){
-
-				if(strcmp(pfc->name[i],"binned_reio_num") == 0){
-					reio_param_count++;
-				}
-
-				if(strcmp(pfc->name[i],"binned_reio_z") == 0){
-					reio_param_count++;
-				}
-				
-				if(strcmp(pfc->name[i],"binned_reio_xe") == 0){
-					reio_param_count++;
-				}
-
-				if(strcmp(pfc->name[i],"binned_reio_step_sharpness") == 0){
-					reio_param_count++;
-				}		
-			}
-
-			class_alloc(reio_param_indices,
-				reio_param_count*sizeof(int),
-				errmsg);
-			
-			j=0;
-			for(i=0; i<pfc->size; i++){
-
-				if(strcmp(pfc->name[i],"binned_reio_num") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-
-				if(strcmp(pfc->name[i],"binned_reio_z") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-				
-				if(strcmp(pfc->name[i],"binned_reio_xe") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-
-				if(strcmp(pfc->name[i],"binned_reio_step_sharpness") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}		
-			}
-			break;
-
-		/** 8.c) reionization parameters if reio_parametrization=reio_many_tanh */
-		case reio_many_tanh:
-			/* Read */
-			for(i=0; i<pfc->size; i++){
-
-				if(strcmp(pfc->name[i],"many_tanh_num") == 0){
-					reio_param_count++;
-				}
-
-				if(strcmp(pfc->name[i],"many_tanh_z") == 0){
-					reio_param_count++;
-				}
-				
-				if(strcmp(pfc->name[i],"many_tanh_xe") == 0){
-					reio_param_count++;
-				}
-
-				if(strcmp(pfc->name[i],"many_tanh_width") == 0){
-					reio_param_count++;
-				}		
-			}
-
-			class_alloc(reio_param_indices,
-				reio_param_count*sizeof(int),
-				errmsg);
-			
-			j=0;
-
-			for(i=0; i<pfc->size; i++){
-
-				if(strcmp(pfc->name[i],"many_tanh_num") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-
-				if(strcmp(pfc->name[i],"many_tanh_z") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-				
-				if(strcmp(pfc->name[i],"many_tanh_xe") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-
-				if(strcmp(pfc->name[i],"many_tanh_width") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}		
-			}
-			break;
-
-		/** 8.d) reionization parameters if reio_parametrization=reio_many_tanh */
-		case reio_inter:
-			/* Read */
-
-			for(i=0; i<pfc->size; i++){
-
-				if(strcmp(pfc->name[i],"reio_inter_num") == 0){
-					reio_param_count++;
-				}
-
-				if(strcmp(pfc->name[i],"reio_inter_z") == 0){
-					reio_param_count++;
-				}
-				
-				if(strcmp(pfc->name[i],"reio_inter_xe") == 0){
-					reio_param_count++;
-				}	
-			}
-
-			class_alloc(reio_param_indices,
-				reio_param_count*sizeof(int),
-				errmsg);
-			
-			j=0;
-
-			for(i=0; i<pfc->size; i++){
-
-				if(strcmp(pfc->name[i],"reio_inter_num") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-
-				if(strcmp(pfc->name[i],"reio_inter_z") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}
-				
-				if(strcmp(pfc->name[i],"reio_inter_xe") == 0){
-					reio_param_indices[j]=i;
-					j++;
-				}	
-			}
-		
-			break;
-		}
-	} else {
-		reio_param_count++;
-		class_alloc(reio_param_indices,
-					reio_param_count*sizeof(int),
-					errmsg);
-			
-		j=0;
-
-		for(i=0; i<pfc->size; i++){
-			if(strcmp(pfc->name[i],"z_reio") == 0){
-				reio_param_indices[j]=i;
-				//fprintf(stdout, "z_reio index = %d\n", i);
-			}
-		}
-	}
-
-	/* At this point, we should know how many input parameters we are skipping, and where they are*/
-
-	// int num_skip_indices=0; /* number of indices to skip when initializing the new file content*/
-
-	int num_skip_indices = exotic_param_count + reio_param_count;
-
-	// num_skip_indices += exotic_param_count;
-
-	// if (has_reio_parametrization){
-	// 	if (pth->reio_parametrization!=reio_none){ /*have to account for the case where we have explicitly set reio_parameterization = reio_none, so reio_param_indices is unallocated and we have no parameters to skip*/
-	// 		num_skip_indices+=reio_param_count;
-	// 	}
-	// } else {
-	// num_skip_indices+=reio_param_count;
-	// }
-
-
-	int * total_skip_indices;
-	class_alloc(total_skip_indices,
-				num_skip_indices*sizeof(int),
-				errmsg);
-	j=0;
-	if(exotic_param_count>0){
-		for(i=0; i<exotic_param_count; i++){
-			total_skip_indices[j] = exotic_param_indices[i];
-			j++; 
-		}
-	}
-	if(reio_param_count>0){ /* guranteed to be at least 1 */
-		for(i=0; i<reio_param_count; i++){
-			total_skip_indices[j] = reio_param_indices[i];
-			j++;
-		}
-	}
-	
-	if(exotic_param_count>0){
-		free(exotic_param_indices);
-	}
-
-	if(reio_param_count>0){
-		free(reio_param_indices);
-	}
-
-	if (num_skip_indices>1){
-		qsort(total_skip_indices, num_skip_indices, sizeof(int), compare_ints);
-	}
-
-	/* we now have a sorted array of all the indices from the original fc we want to skip copying over to the new fc*/
-
-  	class_call(parser_init(&(ebxw.fc),
-                          pfc->size-num_skip_indices+(!has_reio_parametrization), // we will reuse the reio_parametrization if we found it. If not, we need to allocate an extra spot for that.
-                          pfc->filename,
-                          errmsg),
-              errmsg,errmsg); // this allocates the arrays in tmw.fc but does not fill them
-
-	j=0;
-	int next_skip_ind = total_skip_indices[j];
-	int k=0;
-	for(i=0; i<pfc->size; i++){
-		if(i==next_skip_ind){
-			if(j+1==num_skip_indices){
-				continue;
-			} else {
-				next_skip_ind = total_skip_indices[++j];
-				continue;
-			}
-		} else {
-			memcpy(ebxw.fc.name+k, pfc->name+i, sizeof(FileArg));
+    struct thermodynamics * pth,
+    ErrorMsg errmsg){
+
+    int i;
+
+    /* We need to remember that we shot so we can clean up properly */
+    struct exotic_baseline_xe_workspace ebxw;
+
+    int internal_fc_size = 0;
+    short has_reio_parametrization = _FALSE_;
+
+    for(i=0; i<pfc->size; i++){
+        char start[4];
+        strncpy(start, pfc->name[i], 3);
+        start[3]='\0';
+        if(strcmp(start,"DM_") == 0){
+            continue;
+        } else if (strcmp(start,"PBH") == 0){
+            continue;
+        } else if (strcmp(start,"f_e") == 0){
+            continue;
+        } else if (strcmp(start,"chi") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"z_reio") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"tau_reio") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"reionization_exponent") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"reionization_width") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"helium_fullreio_redshift") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"helium_fullreio_width") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"binned_reio_num") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"binned_reio_z") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"binned_reio_xe") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"binned_reio_step_sharpness") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"many_tanh_num") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"many_tanh_z") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"many_tanh_xe") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"many_tanh_width") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"reio_inter_num") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"reio_inter_z") == 0){
+           continue;
+        } else if(strcmp(pfc->name[i],"reio_inter_xe") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"reio_parametrization") == 0){
+            has_reio_parametrization = _TRUE_;
+            internal_fc_size++;
+        } else {
+            internal_fc_size++;
+        }
+    }
+
+    class_call(parser_init(&(ebxw.fc),
+                internal_fc_size+(!has_reio_parametrization), // we will reuse the reio_parametrization if we found it. If not, we need to allocate an extra spot for that.
+                pfc->filename,
+                errmsg),
+                errmsg,errmsg); // this allocates the arrays in tmw.fc but does not fill them
+    
+    int k = 0;
+    for(i=0; i<pfc->size; i++){
+        char start[4];
+        strncpy(start, pfc->name[i], 3);
+        start[3]='\0';
+        if(strcmp(start,"DM_") == 0){
+            continue;
+        } else if (strcmp(start,"PBH") == 0){
+            continue;
+        } else if (strcmp(start,"f_e") == 0){
+            continue;
+        } else if (strcmp(start,"chi") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"z_reio") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"tau_reio") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"reionization_exponent") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"reionization_width") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"helium_fullreio_redshift") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"helium_fullreio_width") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"binned_reio_num") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"binned_reio_z") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"binned_reio_xe") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"binned_reio_step_sharpness") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"many_tanh_num") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"many_tanh_z") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"many_tanh_xe") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"many_tanh_width") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"reio_inter_num") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"reio_inter_z") == 0){
+            continue;
+        } else if(strcmp(pfc->name[i],"reio_inter_xe") == 0){
+            continue;
+        } else {
+            memcpy(ebxw.fc.name+k, pfc->name+i, sizeof(FileArg));
 			memcpy(ebxw.fc.value+k, pfc->value+i, sizeof(FileArg));
 			memcpy(ebxw.fc.read+k, pfc->read+i, sizeof(short));
-			k++;
-		}	
-		
-	}
+			k++;   
+        }
+    }
 
-	for(i=0; i<ebxw.fc.size; i++){
-		if(strcmp(ebxw.fc.name[i],"reio_parametrization") == 0){
-			reio_parametrization_index = i;
-		}
-		if(strcmp(ebxw.fc.name[i],"compute_tau_excess") == 0){
-			compute_tau_excess_index = i;
-		}
-	}
+    if(has_reio_parametrization){
+        for(i=0; i<internal_fc_size; i++){
+            if(strcmp(ebxw.fc.name[i],"reio_parametrization") == 0){
+                class_sprintf(ebxw.fc.value[i], "%s", "reio_none");
+            }
+        }
+    } else {
+        class_sprintf(ebxw.fc.name[k], "%s", "reio_parametrization");
+        class_sprintf(ebxw.fc.value[k], "%s", "reio_none");
+        ebxw.fc.read[k] = _TRUE_;
+    }
 
-	if(has_reio_parametrization){
-		class_sprintf(ebxw.fc.value[reio_parametrization_index], "%s", "reio_none");
-	} else {
-		class_sprintf(ebxw.fc.name[k], "%s", "reio_parametrization");
-		class_sprintf(ebxw.fc.value[k], "%s", "reio_none");
-		// strcpy(ebxw.fc.name[k], "reio_parametrization"); 
-		// strcpy(ebxw.fc.value[k],"reio_none");
-	}
-
-	class_sprintf(ebxw.fc.value[compute_tau_excess_index], "%s", "no");
-
-	/* the workspace is now set up to do the needful, we can free arrays*/
-
-	free(total_skip_indices);
+    for(i=0; i<internal_fc_size; i++){
+        if(strcmp(ebxw.fc.name[i],"compute_tau_excess") == 0){
+            class_sprintf(ebxw.fc.value[i], "%s", "no");
+        }    
+    }
 	int arr_size;
 	class_call(input_compute_baseline_xe(&(ebxw), &arr_size, errmsg), errmsg, errmsg);
 
@@ -896,10 +615,456 @@ int input_baseline_xe(struct file_content * pfc,
 	parser_free(&(ebxw.fc));
 
 	free(ebxw.baseline_xe);
-
+    
 	return _SUCCESS_;
 
 }
+
+// int input_baseline_xe(struct file_content * pfc,
+//                    struct thermodynamics * pth,
+//                    ErrorMsg errmsg){
+
+// 	int i;
+  
+//   	/* We need to remember that we shot so we can clean up properly */
+//   	struct exotic_baseline_xe_workspace ebxw;
+
+
+// 	// first, count number of exotic injection params, then write them down so we know where they are
+// 	int exotic_param_count = 0;
+// 	int * exotic_param_indices;
+
+// 	//for(int m=0; m<pfc->size; m++){
+// //		fprintf(stdout, "%s = %s\n", pfc->name[m] , pfc->value[m]);
+// //	}
+
+//   	for(i=0; i<pfc->size; i++){
+// 		char start[4];
+// 		strncpy(start, pfc->name[i], 3);
+// 		start[3]='\0';
+// 		if(strcmp(start,"DM_") == 0){
+// 			exotic_param_count++;
+// 		}
+// 		if(strcmp(start,"PBH") == 0){
+// 			exotic_param_count++;
+// 		}
+// 		if(strcmp(start,"f_e") == 0){
+// 			exotic_param_count++;
+// 		}
+// 		if(strcmp(start,"chi") == 0){
+// 			exotic_param_count++;
+// 		} // all exotic params, and only them, begin with one of the four above strings
+//   	}
+
+// 	int j=0;
+
+// 	if (exotic_param_count > 0){
+
+// 		class_alloc(exotic_param_indices,
+// 					exotic_param_count*sizeof(int),
+// 					errmsg);
+
+// 		for(i=0; i<pfc->size; i++){
+// 			char start[4];
+// 			strncpy(start, pfc->name[i], 3);
+// 			start[3]='\0';
+// 			if(strcmp(start,"DM_") == 0){
+// 				exotic_param_indices[j] = i;
+// 				j++;
+// 			}
+// 			if(strcmp(start,"PBH") == 0){
+// 				exotic_param_indices[j] = i;
+// 				j++;
+// 			}
+// 			if(strcmp(start,"f_e") == 0){
+// 				exotic_param_indices[j] = i;
+// 				j++;
+// 			}
+// 			if(strcmp(start,"chi") == 0){
+// 				exotic_param_indices[j] = i;
+// 				j++;
+// 			}
+// 		}
+// 	}
+
+// 	short has_reio_parametrization = _FALSE_;
+// 	int reio_parametrization_index;
+// 	int compute_tau_excess_index;
+
+// 	for(i=0; i<pfc->size; i++){
+// 		if(strcmp(pfc->name[i],"reio_parametrization") == 0){
+// 			has_reio_parametrization = _TRUE_;
+// 			reio_parametrization_index = i;
+// 		}
+// 		if(strcmp(pfc->name[i],"compute_tau_excess") == 0){
+// 			compute_tau_excess_index = i;
+// 		}
+// 	}
+
+//     printf("has_reio_parametrization %i \n", has_reio_parametrization);
+// 	int reio_param_count = 0;	
+// 	int * reio_param_indices;
+
+// 	if(has_reio_parametrization){
+
+// 		switch (pth->reio_parametrization) {
+		
+// 		case reio_none:
+// 		/* nothing to be read*/
+// 			break;
+
+// 	/** 8.a) Reionization parameters if reio_parametrization=reio_camb */
+// 		case reio_camb:
+// 		case reio_half_tanh:
+// 		/* Read */
+// 		  	for(i=0; i<pfc->size; i++){
+// 				if(strcmp(pfc->name[i],"z_reio") == 0){
+// 					reio_param_count++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"tau_reio") == 0){
+// 					reio_param_count++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"reionization_exponent") == 0){
+// 					reio_param_count++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"reionization_width") == 0){
+// 					reio_param_count++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"helium_fullreio_redshift") == 0){
+// 					reio_param_count++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"helium_fullreio_width") == 0){
+// 					reio_param_count++;
+// 				}
+// 			}
+
+// 			class_alloc(reio_param_indices,
+// 				reio_param_count*sizeof(int),
+// 				errmsg);
+			
+// 			j=0;
+// 		  	for(i=0; i<pfc->size; i++){
+// 				if(strcmp(pfc->name[i],"z_reio") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"tau_reio") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"reionization_exponent") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"reionization_width") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"helium_fullreio_redshift") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"helium_fullreio_width") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+// 			}
+
+// 			break;
+
+// 		/** 8.b) Reionization parameters if reio_parametrization=reio_bins_tanh */
+// 		case reio_bins_tanh:
+// 			/* Read */
+
+// 			for(i=0; i<pfc->size; i++){
+
+// 				if(strcmp(pfc->name[i],"binned_reio_num") == 0){
+// 					reio_param_count++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"binned_reio_z") == 0){
+// 					reio_param_count++;
+// 				}
+				
+// 				if(strcmp(pfc->name[i],"binned_reio_xe") == 0){
+// 					reio_param_count++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"binned_reio_step_sharpness") == 0){
+// 					reio_param_count++;
+// 				}		
+// 			}
+
+// 			class_alloc(reio_param_indices,
+// 				reio_param_count*sizeof(int),
+// 				errmsg);
+			
+// 			j=0;
+// 			for(i=0; i<pfc->size; i++){
+
+// 				if(strcmp(pfc->name[i],"binned_reio_num") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"binned_reio_z") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+				
+// 				if(strcmp(pfc->name[i],"binned_reio_xe") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"binned_reio_step_sharpness") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}		
+// 			}
+// 			break;
+
+// 		/** 8.c) reionization parameters if reio_parametrization=reio_many_tanh */
+// 		case reio_many_tanh:
+// 			/* Read */
+// 			for(i=0; i<pfc->size; i++){
+
+// 				if(strcmp(pfc->name[i],"many_tanh_num") == 0){
+// 					reio_param_count++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"many_tanh_z") == 0){
+// 					reio_param_count++;
+// 				}
+				
+// 				if(strcmp(pfc->name[i],"many_tanh_xe") == 0){
+// 					reio_param_count++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"many_tanh_width") == 0){
+// 					reio_param_count++;
+// 				}		
+// 			}
+
+// 			class_alloc(reio_param_indices,
+// 				reio_param_count*sizeof(int),
+// 				errmsg);
+			
+// 			j=0;
+
+// 			for(i=0; i<pfc->size; i++){
+
+// 				if(strcmp(pfc->name[i],"many_tanh_num") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"many_tanh_z") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+				
+// 				if(strcmp(pfc->name[i],"many_tanh_xe") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"many_tanh_width") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}		
+// 			}
+// 			break;
+
+// 		/** 8.d) reionization parameters if reio_parametrization=reio_many_tanh */
+// 		case reio_inter:
+// 			/* Read */
+
+// 			for(i=0; i<pfc->size; i++){
+
+// 				if(strcmp(pfc->name[i],"reio_inter_num") == 0){
+// 					reio_param_count++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"reio_inter_z") == 0){
+// 					reio_param_count++;
+// 				}
+				
+// 				if(strcmp(pfc->name[i],"reio_inter_xe") == 0){
+// 					reio_param_count++;
+// 				}	
+// 			}
+
+// 			class_alloc(reio_param_indices,
+// 				reio_param_count*sizeof(int),
+// 				errmsg);
+			
+// 			j=0;
+
+// 			for(i=0; i<pfc->size; i++){
+
+// 				if(strcmp(pfc->name[i],"reio_inter_num") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+
+// 				if(strcmp(pfc->name[i],"reio_inter_z") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}
+				
+// 				if(strcmp(pfc->name[i],"reio_inter_xe") == 0){
+// 					reio_param_indices[j]=i;
+// 					j++;
+// 				}	
+// 			}
+		
+// 			break;
+// 		}
+// 	} else {
+// 		reio_param_count++;
+// 		class_alloc(reio_param_indices,
+// 					reio_param_count*sizeof(int),
+// 					errmsg);
+			
+// 		j=0;
+
+// 		for(i=0; i<pfc->size; i++){
+// 			if(strcmp(pfc->name[i],"z_reio") == 0){
+// 				reio_param_indices[j]=i;
+// 				//fprintf(stdout, "z_reio index = %d\n", i);
+// 			}
+// 		}
+// 	}
+
+// 	/* At this point, we should know how many input parameters we are skipping, and where they are*/
+
+// 	// int num_skip_indices=0; /* number of indices to skip when initializing the new file content*/
+
+// 	int num_skip_indices = exotic_param_count + reio_param_count;
+
+// 	// num_skip_indices += exotic_param_count;
+
+// 	// if (has_reio_parametrization){
+// 	// 	if (pth->reio_parametrization!=reio_none){ /*have to account for the case where we have explicitly set reio_parameterization = reio_none, so reio_param_indices is unallocated and we have no parameters to skip*/
+// 	// 		num_skip_indices+=reio_param_count;
+// 	// 	}
+// 	// } else {
+// 	// num_skip_indices+=reio_param_count;
+// 	// }
+
+
+// 	int * total_skip_indices;
+// 	class_alloc(total_skip_indices,
+// 				num_skip_indices*sizeof(int),
+// 				errmsg);
+// 	j=0;
+// 	if(exotic_param_count>0){
+// 		for(i=0; i<exotic_param_count; i++){
+// 			total_skip_indices[j] = exotic_param_indices[i];
+// 			j++; 
+// 		}
+// 	}
+// 	if(reio_param_count>0){ /* guranteed to be at least 1 */
+// 		for(i=0; i<reio_param_count; i++){
+// 			total_skip_indices[j] = reio_param_indices[i];
+// 			j++;
+// 		}
+// 	}
+	
+// 	if(exotic_param_count>0){
+// 		free(exotic_param_indices);
+// 	}
+
+// 	if(reio_param_count>0){
+// 		free(reio_param_indices);
+// 	}
+
+// 	if (num_skip_indices>1){
+// 		qsort(total_skip_indices, num_skip_indices, sizeof(int), compare_ints);
+// 	}
+
+// 	/* we now have a sorted array of all the indices from the original fc we want to skip copying over to the new fc*/
+
+//   	class_call(parser_init(&(ebxw.fc),
+//                           pfc->size-num_skip_indices+(has_reio_parametrization), // we will reuse the reio_parametrization if we found it. If not, we need to allocate an extra spot for that.
+//                           pfc->filename,
+//                           errmsg),
+//               errmsg,errmsg); // this allocates the arrays in tmw.fc but does not fill them
+
+// 	j=0;
+// 	int next_skip_ind = total_skip_indices[j];
+// 	int k=0;
+// 	for(i=0; i<pfc->size; i++){
+// 		if(i==next_skip_ind){
+// 			if(j+1==num_skip_indices){
+// 				continue;
+// 			} else {
+// 				next_skip_ind = total_skip_indices[++j];
+// 				continue;
+// 			}
+// 		} else {
+// 			memcpy(ebxw.fc.name+k, pfc->name+i, sizeof(FileArg));
+// 			memcpy(ebxw.fc.value+k, pfc->value+i, sizeof(FileArg));
+// 			memcpy(ebxw.fc.read+k, pfc->read+i, sizeof(short));
+// 			k++;
+// 		}	
+		
+// 	}
+
+// 	for(i=0; i<ebxw.fc.size; i++){
+// 		if(strcmp(ebxw.fc.name[i],"reio_parametrization") == 0){
+// 			reio_parametrization_index = i;
+// 		}
+// 		if(strcmp(ebxw.fc.name[i],"compute_tau_excess") == 0){
+// 			compute_tau_excess_index = i;
+// 		}
+// 	}
+
+// 	if(has_reio_parametrization){
+// 		class_sprintf(ebxw.fc.value[reio_parametrization_index], "%s", "reio_none");
+// 	} else {
+// 		class_sprintf(ebxw.fc.name[k], "%s", "reio_parametrization");
+// 		class_sprintf(ebxw.fc.value[k], "%s", "reio_none");
+// 		// strcpy(ebxw.fc.name[k], "reio_parametrization"); 
+// 		// strcpy(ebxw.fc.value[k],"reio_none");
+// 	}
+
+// 	class_sprintf(ebxw.fc.value[compute_tau_excess_index], "%s", "no");
+
+// 	/* the workspace is now set up to do the needful, we can free arrays*/
+
+//     // for(i=0; i<ebxw.fc.size; i++){
+//     //     printf("%i, %s = %s\n", i, ebxw.fc.name[i], ebxw.fc.value[i]);
+//     // }
+
+// 	free(total_skip_indices);
+// 	int arr_size;
+// 	class_call(input_compute_baseline_xe(&(ebxw), &arr_size, errmsg), errmsg, errmsg);
+
+// 	class_alloc(pth->baseline_xe,
+// 				arr_size*sizeof(double),
+// 				errmsg);
+
+// 	memcpy(pth->baseline_xe, ebxw.baseline_xe, arr_size*sizeof(double));
+
+// 	parser_free(&(ebxw.fc));
+
+// 	free(ebxw.baseline_xe);
+
+// 	return _SUCCESS_;
+
+// }
 
 
 int input_compute_baseline_xe(struct exotic_baseline_xe_workspace * pebxw,

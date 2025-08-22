@@ -23,7 +23,7 @@ int main(int argc, char **argv) {
     printf("\n\nError running input_init \n=>%s\n",errmsg);
     return _FAILURE_;
   }
-
+  
   if (background_init(&pr,&ba) == _FAILURE_) {
     printf("\n\nError running background_init \n=>%s\n",ba.error_message);
     return _FAILURE_;
